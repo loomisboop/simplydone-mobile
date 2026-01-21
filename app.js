@@ -348,7 +348,8 @@ async function loadTasksFromFirebase() {
         const tasks = [];
         snapshot.forEach((doc) => {
             const task = doc.data();
-            if (!task.completed) {
+            // PC v0.84 uses completed_at (null = incomplete, timestamp = completed)
+            if (!task.completed_at && !task.deleted) {
                 tasks.push({ id: doc.id, ...task });
             }
         });
@@ -618,4 +619,5 @@ if ('serviceWorker' in navigator) {
 
 console.log('SimplyDone Mobile ready! 🚀');
 console.log('Compatibility mode - works on all browsers!');
+
 
