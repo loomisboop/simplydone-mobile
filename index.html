@@ -550,6 +550,12 @@
     <!-- Modals will be added dynamically -->
     <div id="modal-container"></div>
 
-    <script type="module" src="app.js"></script>
+    <!-- Firebase SDK (compatibility version - loads without modules) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Our app code -->
+    <script src="app.js"></script>
 </body>
 </html>
+
