@@ -1,37 +1,50 @@
-// SimplyDone Mobile App - JavaScript
-// Mobile-optimized with Firebase sync
+// SimplyDone Mobile App - Compatibility Version
+// Works on all browsers, no ES6 modules needed
+
+// Wait for page to load
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('SimplyDone Mobile starting...');
+    
+    // Wait for Firebase to load from CDN
+    if (typeof firebase === 'undefined') {
+        console.error('Firebase not loaded! Check script tags in index.html');
+        showToast('Error: Firebase not loaded');
+        return;
+    }
+    
+    console.log('✓ Firebase library loaded');
+    
+    // Initialize Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKmj5YhwFNK90dLq3Um-nMkqqU9Yu5R0E",
+        authDomain: "simplydonesync.firebaseapp.com",
+        projectId: "simplydonesync",
+        storageBucket: "simplydonesync.firebasestorage.app",
+        messagingSenderId: "389712724470",
+        appId: "1:389712724470:web:0a3f48dde195c1de29c7d7",
+        measurementId: "G-ZCCCT2F8R8"
+    };
+    
+    try {
+        firebase.initializeApp(firebaseConfig);
+        window.db = firebase.firestore();
+        console.log('🔥 Firebase initialized! Project:', firebaseConfig.projectId);
+    } catch (error) {
+        console.error('Firebase init error:', error);
+        showToast('Firebase connection failed');
+    }
+    
+    // Initialize app
+    initializeApp();
+});
 
 // ============================================================================
-// FIREBASE CONFIGURATION
-// ============================================================================
-
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, getDocs, doc, setDoc, onSnapshot, query, where, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-// Your Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDKmj5YhwFNK90dLq3Um-nMkqqU9Yu5R0E",
-  authDomain: "simplydonesync.firebaseapp.com",
-  projectId: "simplydonesync",
-  storageBucket: "simplydonesync.firebasestorage.app",
-  messagingSenderId: "389712724470",
-  appId: "1:389712724470:web:0a3f48dde195c1de29c7d7",
-  measurementId: "G-ZCCCT2F8R8"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-console.log('🔥 Firebase initialized! Project:', firebaseConfig.projectId);
-
-// ============================================================================
-// INITIALIZATION
+// GLOBAL VARIABLES
 // ============================================================================
 
 let currentScreen = 'tasks';
 let deviceId = null;
-let USER_UID = 'vV0pIk5X0hPggrCwmtluuyAkk3E2'; // Your User UID from PC
+const USER_UID = 'vV0pIk5X0hPggrCwmtluuyAkk3E2'; // Your User UID from PC
 let healthData = {
     steps: 0,
     exercise: 0,
@@ -39,11 +52,9 @@ let healthData = {
     date: new Date().toISOString().split('T')[0]
 };
 
-// Initialize app when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('SimplyDone Mobile starting...');
-    initializeApp();
-});
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 
 async function initializeApp() {
     // Generate or load device ID
@@ -144,10 +155,12 @@ async function syncFromFirebase() {
 }
 
 // ============================================================================
-// SCREEN NAVIGATION
+// SCREEN NAVIGATION - MAKE THESE GLOBAL!
 // ============================================================================
 
-function showScreen(screenName) {
+window.showScreen = function(screenName) {
+    console.log('Navigating to:', screenName);
+    
     // Hide all screens
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     
@@ -164,7 +177,7 @@ function showScreen(screenName) {
     if (screenName === 'tasks') loadTasks();
     if (screenName === 'health') loadHealth();
     if (screenName === 'goals') loadGoals();
-}
+};
 
 // ============================================================================
 // HEALTH DATA MANAGEMENT
@@ -206,21 +219,14 @@ function updateHealthDisplay() {
 async function loadHealthFromFirebase() {
     try {
         const today = new Date().toISOString().split('T')[0];
-        const docRef = doc(db, `users/${USER_UID}/health_data`, today);
-        const docSnap = await getDocs(collection(db, `users/${USER_UID}/health_data`));
+        const docRef = window.db.collection(`users/${USER_UID}/health_data`).doc(today);
+        const docSnap = await docRef.get();
         
-        // Find today's data
-        let todayData = null;
-        docSnap.forEach((doc) => {
-            if (doc.id === today) {
-                todayData = doc.data();
-            }
-        });
-        
-        if (todayData) {
-            healthData.steps = todayData.steps_walked || 0;
-            healthData.exercise = todayData.exercise_minutes || 0;
-            healthData.mindfulness = todayData.mindfulness_minutes || 0;
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            healthData.steps = data.steps_walked || 0;
+            healthData.exercise = data.exercise_minutes || 0;
+            healthData.mindfulness = data.mindfulness_minutes || 0;
             healthData.date = today;
             
             updateHealthDisplay();
@@ -231,8 +237,8 @@ async function loadHealthFromFirebase() {
     }
 }
 
-// Add health data functions
-function addSteps() {
+// Make these functions global so buttons can call them
+window.addSteps = function() {
     const steps = prompt('How many steps?', '1000');
     if (steps && !isNaN(steps)) {
         healthData.steps += parseInt(steps);
@@ -240,9 +246,9 @@ function addSteps() {
         showToast(`Added ${steps} steps! 👟`);
         syncHealthToFirebase();
     }
-}
+};
 
-function addExercise() {
+window.addExercise = function() {
     const minutes = prompt('How many minutes of exercise?', '15');
     if (minutes && !isNaN(minutes)) {
         healthData.exercise += parseInt(minutes);
@@ -250,9 +256,9 @@ function addExercise() {
         showToast(`Added ${minutes} minutes of exercise! 💪`);
         syncHealthToFirebase();
     }
-}
+};
 
-function addMindfulness() {
+window.addMindfulness = function() {
     const minutes = prompt('How many minutes of mindfulness?', '5');
     if (minutes && !isNaN(minutes)) {
         healthData.mindfulness += parseInt(minutes);
@@ -260,7 +266,7 @@ function addMindfulness() {
         showToast(`Added ${minutes} minutes of mindfulness! 🧘`);
         syncHealthToFirebase();
     }
-}
+};
 
 async function syncHealthToFirebase() {
     console.log('📤 Syncing health data to Firebase...');
@@ -269,16 +275,14 @@ async function syncHealthToFirebase() {
         const sourceKey = `android-manual-${deviceId}`;
         const timestamp = new Date().toISOString();
         
-        // Get existing data first to merge properly
-        const docRef = doc(db, `users/${USER_UID}/health_data`, healthData.date);
-        const docSnap = await getDocs(collection(db, `users/${USER_UID}/health_data`));
+        // Get existing data first
+        const docRef = window.db.collection(`users/${USER_UID}/health_data`).doc(healthData.date);
+        const docSnap = await docRef.get();
         
         let existingSources = {};
-        docSnap.forEach((doc) => {
-            if (doc.id === healthData.date && doc.data().sources) {
-                existingSources = doc.data().sources;
-            }
-        });
+        if (docSnap.exists && docSnap.data().sources) {
+            existingSources = docSnap.data().sources;
+        }
         
         // Add our source
         existingSources[sourceKey] = {
@@ -288,7 +292,7 @@ async function syncHealthToFirebase() {
             timestamp: timestamp
         };
         
-        // Calculate totals (SUM steps, LATEST for exercise/mindfulness)
+        // Calculate totals
         let totalSteps = 0;
         let latestExercise = { value: 0, time: '' };
         let latestMindfulness = { value: 0, time: '' };
@@ -305,7 +309,7 @@ async function syncHealthToFirebase() {
             }
         }
         
-        // Prepare data with source tracking (matches PC v0.84 format)
+        // Prepare data
         const dataToSync = {
             date: healthData.date,
             steps_walked: totalSteps,
@@ -318,7 +322,7 @@ async function syncHealthToFirebase() {
         };
         
         // Save to Firestore
-        await setDoc(docRef, dataToSync);
+        await docRef.set(dataToSync);
         
         console.log('✓ Health data synced to Firebase!');
         showToast('Synced with PC! ☁️');
@@ -334,28 +338,22 @@ async function syncHealthToFirebase() {
 // ============================================================================
 
 function loadTasks() {
-    // Will be replaced by Firebase version
     loadTasksFromFirebase();
 }
 
 async function loadTasksFromFirebase() {
     try {
-        const tasksRef = collection(db, `users/${USER_UID}/tasks`);
-        const snapshot = await getDocs(tasksRef);
+        const snapshot = await window.db.collection(`users/${USER_UID}/tasks`).get();
         
         const tasks = [];
         snapshot.forEach((doc) => {
             const task = doc.data();
-            // Only show incomplete tasks
             if (!task.completed) {
                 tasks.push({ id: doc.id, ...task });
             }
         });
         
-        // Cache locally
         localStorage.setItem('tasks', JSON.stringify(tasks));
-        
-        // Display
         displayTasks(tasks);
         
         console.log(`✓ Loaded ${tasks.length} tasks from Firebase`);
@@ -430,11 +428,10 @@ function getTaskDetails(task) {
     return details.join('<br>') || 'No additional details';
 }
 
-async function completeTask(taskId) {
+window.completeTask = async function(taskId) {
     if (confirm('Mark this task as complete?')) {
         try {
-            const taskRef = doc(db, `users/${USER_UID}/tasks`, taskId);
-            await updateDoc(taskRef, {
+            await window.db.collection(`users/${USER_UID}/tasks`).doc(taskId).update({
                 completed: true,
                 completed_at: new Date().toISOString(),
                 completed_by: deviceId
@@ -448,7 +445,7 @@ async function completeTask(taskId) {
             showToast('Failed to complete task');
         }
     }
-}
+};
 
 // ============================================================================
 // GOALS MANAGEMENT
@@ -460,18 +457,14 @@ function loadGoals() {
 
 async function loadGoalsFromFirebase() {
     try {
-        const goalsRef = collection(db, `users/${USER_UID}/goals`);
-        const snapshot = await getDocs(goalsRef);
+        const snapshot = await window.db.collection(`users/${USER_UID}/goals`).get();
         
         const goals = [];
         snapshot.forEach((doc) => {
             goals.push({ id: doc.id, ...doc.data() });
         });
         
-        // Cache locally
         localStorage.setItem('goals', JSON.stringify(goals));
-        
-        // Display
         displayGoals(goals);
         
         console.log(`✓ Loaded ${goals.length} goals from Firebase`);
@@ -538,7 +531,7 @@ function displayGoals(goals) {
 // SYNC FUNCTIONALITY
 // ============================================================================
 
-async function syncNow() {
+window.syncNow = async function() {
     const btn = document.getElementById('sync-btn-text');
     const originalText = btn.textContent;
     btn.innerHTML = '<span class="loading"></span> Syncing...';
@@ -547,12 +540,20 @@ async function syncNow() {
     
     btn.textContent = originalText;
     showToast('Synced successfully! 🔄');
-}
+};
 
-function showSyncStatus() {
+window.showSyncStatus = function() {
     const status = document.getElementById('sync-status-badge').textContent;
     const lastSync = document.getElementById('last-sync-time').textContent;
     alert(`Sync Status\n\nLast sync: ${lastSync}\nStatus: ${status}\nDevice: ${deviceId}\nUser: ${USER_UID}`);
+};
+
+window.showSettings = function() {
+    showScreen('settings');
+};
+
+function loadHealth() {
+    loadHealthFromFirebase();
 }
 
 // ============================================================================
@@ -578,18 +579,6 @@ function checkLocationPermission() {
 }
 
 // ============================================================================
-// SETTINGS
-// ============================================================================
-
-function showSettings() {
-    showScreen('settings');
-}
-
-function loadHealth() {
-    loadHealthFromFirebase();
-}
-
-// ============================================================================
 // UI HELPERS
 // ============================================================================
 
@@ -607,15 +596,13 @@ function showToast(message) {
         font-size: 14px;
         z-index: 1000;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        animation: slideUp 0.3s ease;
     `;
     toast.textContent = message;
     
     document.body.appendChild(toast);
     
     setTimeout(() => {
-        toast.style.animation = 'slideDown 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
+        toast.remove();
     }, 3000);
 }
 
@@ -630,5 +617,5 @@ if ('serviceWorker' in navigator) {
 }
 
 console.log('SimplyDone Mobile ready! 🚀');
-console.log('Firebase project:', firebaseConfig.projectId);
-console.log('Auto-sync enabled');
+console.log('Compatibility mode - works on all browsers!');
+
