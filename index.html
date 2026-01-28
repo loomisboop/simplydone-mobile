@@ -3,559 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="SimplyDone - ADHD-friendly task management">
+    <meta name="theme-color" content="#1976D2">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#4CAF50">
-    <title>SimplyDone</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SimplyDone">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="assets/icons/icon-72.png" sizes="72x72">
+    <link rel="icon" type="image/png" href="assets/icons/icon-96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="assets/icons/icon-128.png" sizes="128x128">
+    <link rel="apple-touch-icon" href="assets/icons/icon-152.png">
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <style>
-        /* ===================================
-           MOBILE-FIRST DESIGN
-           Optimized for phones & tablets
-           NO cramming, NO tiny text!
-           =================================== */
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #FAFAFA;
-            color: #212121;
-            font-size: 16px;
-            line-height: 1.5;
-            padding-bottom: 72px; /* Space for bottom nav */
-            overflow-x: hidden;
-        }
-        
-        /* Top Bar - Clean and Simple */
-        .top-bar {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 100;
-        }
-        
-        .app-title {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        
-        .top-actions {
-            display: flex;
-            gap: 16px;
-        }
-        
-        .icon-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            transition: background 0.2s;
-        }
-        
-        .icon-btn:active {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        /* Main Content Area */
-        .content {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Section Headers - Big and Clear */
-        .section-header {
-            font-size: 20px;
-            font-weight: 700;
-            color: #212121;
-            margin: 24px 0 16px 0;
-            padding-left: 4px;
-        }
-        
-        /* Task Cards - Large, Readable, Touch-Friendly */
-        .task-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .task-card:active {
-            transform: scale(0.98);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-        }
-        
-        .task-icon {
-            font-size: 24px;
-            margin-right: 12px;
-            vertical-align: middle;
-        }
-        
-        .task-name {
-            font-size: 18px;
-            font-weight: 600;
-            color: #212121;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-        
-        .task-details {
-            font-size: 14px;
-            color: #757575;
-            margin-bottom: 16px;
-            line-height: 1.6;
-        }
-        
-        /* Buttons - Big, Clear, Easy to Tap */
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        
-        .btn-primary {
-            background: #4CAF50;
-            color: white;
-        }
-        
-        .btn-primary:active {
-            background: #45a049;
-            transform: scale(0.97);
-        }
-        
-        .btn-secondary {
-            background: #E0E0E0;
-            color: #212121;
-        }
-        
-        .btn-secondary:active {
-            background: #D0D0D0;
-        }
-        
-        /* Health Cards - Clean Progress Visualization */
-        .health-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .health-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .health-icon {
-            font-size: 28px;
-            margin-right: 12px;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background: #E0E0E0;
-            border-radius: 6px;
-            overflow: hidden;
-            margin: 12px 0;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
-            border-radius: 6px;
-            transition: width 0.3s ease;
-        }
-        
-        .progress-text {
-            font-size: 16px;
-            font-weight: 600;
-            color: #212121;
-            margin-bottom: 4px;
-        }
-        
-        .progress-goal {
-            font-size: 14px;
-            color: #757575;
-        }
-        
-        /* Bottom Navigation - Thumb-Friendly */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.2s;
-            flex: 1;
-            max-width: 120px;
-        }
-        
-        .nav-item:active {
-            background: #F5F5F5;
-        }
-        
-        .nav-item.active {
-            color: #4CAF50;
-        }
-        
-        .nav-icon {
-            font-size: 28px;
-            margin-bottom: 4px;
-        }
-        
-        .nav-label {
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        /* Empty State - Friendly Message */
-        .empty-state {
-            text-align: center;
-            padding: 48px 20px;
-            color: #757575;
-        }
-        
-        .empty-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-        
-        .empty-text {
-            font-size: 18px;
-            margin-bottom: 8px;
-        }
-        
-        .empty-subtext {
-            font-size: 14px;
-            color: #9E9E9E;
-        }
-        
-        /* Modal/Dialog - For Actions */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .modal.show {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 400px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-        
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-        
-        /* Input Fields - Large and Easy to Use */
-        .input-group {
-            margin-bottom: 20px;
-        }
-        
-        .input-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            color: #757575;
-            margin-bottom: 8px;
-        }
-        
-        .input-field {
-            width: 100%;
-            padding: 16px;
-            border: 2px solid #E0E0E0;
-            border-radius: 8px;
-            font-size: 16px;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: #4CAF50;
-        }
-        
-        /* Loading Spinner */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4CAF50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Status Badge */
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        
-        .status-synced {
-            background: #E8F5E9;
-            color: #2E7D32;
-        }
-        
-        .status-offline {
-            background: #FFEBEE;
-            color: #C62828;
-        }
-        
-        /* Hidden Screens */
-        .screen {
-            display: none;
-        }
-        
-        .screen.active {
-            display: block;
-        }
-        
-        /* Responsive: Tablet Optimization */
-        @media (min-width: 768px) {
-            .content {
-                padding: 32px;
-            }
-            
-            .task-card, .health-card {
-                padding: 28px;
-            }
-            
-            .task-name {
-                font-size: 20px;
-            }
-        }
-    </style>
+    
+    <title>SimplyDone</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/screens.css">
+    <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <div class="app-title">SimplyDone</div>
-        <div class="top-actions">
-            <button class="icon-btn" onclick="showSyncStatus()">🔄</button>
-            <button class="icon-btn" onclick="showSettings()">⚙️</button>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Loading SimplyDone...</p>
+    </div>
+    
+    <!-- App Container -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Top Bar -->
+        <div id="top-bar"></div>
+        
+        <!-- Main Content Area -->
+        <div id="main-content" class="main-content"></div>
+        
+        <!-- Bottom Navigation -->
+        <div id="bottom-nav" class="bottom-nav">
+            <button class="nav-item active" data-screen="dashboard">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </button>
+            <button class="nav-item" data-screen="tasklist">
+                <span class="nav-icon">✓</span>
+                <span class="nav-label">Tasks</span>
+            </button>
+            <button class="nav-item nav-add" data-screen="addtask">
+                <span class="nav-icon">+</span>
+                <span class="nav-label">Add</span>
+            </button>
+            <button class="nav-item" data-screen="mindfulness">
+                <span class="nav-icon">🧘</span>
+                <span class="nav-label">Mind</span>
+            </button>
+            <button class="nav-item" data-screen="settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </button>
         </div>
     </div>
-
-    <!-- Tasks Screen -->
-    <div id="screen-tasks" class="screen active">
-        <div class="content">
-            <div class="section-header">📋 My Tasks</div>
-            <div id="tasks-list">
-                <!-- Tasks will be loaded here -->
-                <div class="empty-state">
-                    <div class="empty-icon">📝</div>
-                    <div class="empty-text">No tasks yet</div>
-                    <div class="empty-subtext">Tasks from your PC will appear here</div>
-                </div>
-            </div>
-        </div>
+    
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="offline-banner" style="display: none;">
+        <span>📵 Offline Mode</span>
+        <span id="offline-queue-count"></span>
     </div>
-
-    <!-- Health Screen -->
-    <div id="screen-health" class="screen">
-        <div class="content">
-            <div class="section-header">💪 Health & Activity</div>
-            
-            <div class="health-card">
-                <div class="health-title">
-                    <span class="health-icon">👟</span>
-                    <span>Steps Today</span>
-                </div>
-                <div class="progress-text"><span id="steps-count">0</span> / 10,000</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="steps-progress" style="width: 0%"></div>
-                </div>
-                <button class="btn btn-primary" onclick="addSteps()">+ Add Steps</button>
-            </div>
-            
-            <div class="health-card">
-                <div class="health-title">
-                    <span class="health-icon">💪</span>
-                    <span>Exercise</span>
-                </div>
-                <div class="progress-text"><span id="exercise-count">0</span> / 30 min</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="exercise-progress" style="width: 0%"></div>
-                </div>
-                <button class="btn btn-primary" onclick="addExercise()">+ Add Exercise</button>
-            </div>
-            
-            <div class="health-card">
-                <div class="health-title">
-                    <span class="health-icon">🧘</span>
-                    <span>Mindfulness</span>
-                </div>
-                <div class="progress-text"><span id="mindfulness-count">0</span> / 15 min</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="mindfulness-progress" style="width: 0%"></div>
-                </div>
-                <button class="btn btn-primary" onclick="addMindfulness()">+ Add Mindfulness</button>
-            </div>
-            
-            <div style="text-align: center; color: #757575; font-size: 14px; margin-top: 20px;">
-                <span id="health-sync-status">Last synced: Never</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Goals Screen -->
-    <div id="screen-goals" class="screen">
-        <div class="content">
-            <div class="section-header">🎯 My Goals</div>
-            <div id="goals-list">
-                <div class="empty-state">
-                    <div class="empty-icon">🎯</div>
-                    <div class="empty-text">No goals yet</div>
-                    <div class="empty-subtext">Goals from your PC will appear here</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Screen -->
-    <div id="screen-settings" class="screen">
-        <div class="content">
-            <div class="section-header">⚙️ Settings</div>
-            
-            <div class="task-card">
-                <div class="task-name">📱 Device</div>
-                <div class="task-details">
-                    Name: <strong id="device-name">My Device</strong><br>
-                    ID: <strong id="device-id">Loading...</strong>
-                </div>
-            </div>
-            
-            <div class="task-card">
-                <div class="task-name">🔄 Sync Status</div>
-                <div class="task-details">
-                    Last sync: <strong id="last-sync-time">Never</strong><br>
-                    Status: <span id="sync-status-badge" class="status-badge status-offline">Offline</span>
-                </div>
-                <button class="btn btn-primary" onclick="syncNow()">
-                    <span id="sync-btn-text">Sync Now</span>
-                </button>
-            </div>
-            
-            <div class="task-card">
-                <div class="task-name">ℹ️ About</div>
-                <div class="task-details">
-                    Version: 1.0.0<br>
-                    SimplyDone Mobile Companion<br>
-                    Syncs with SimplyDone PC v0.84
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="showScreen('tasks')">
-            <div class="nav-icon">📋</div>
-            <div class="nav-label">Tasks</div>
-        </div>
-        <div class="nav-item" onclick="showScreen('health')">
-            <div class="nav-icon">💪</div>
-            <div class="nav-label">Health</div>
-        </div>
-        <div class="nav-item" onclick="showScreen('goals')">
-            <div class="nav-icon">🎯</div>
-            <div class="nav-label">Goals</div>
-        </div>
-        <div class="nav-item" onclick="showScreen('settings')">
-            <div class="nav-icon">⚙️</div>
-            <div class="nav-label">Settings</div>
-        </div>
-    </div>
-
-    <!-- Modals will be added dynamically -->
-    <div id="modal-container"></div>
-
-    <!-- Firebase SDK (compatibility version - loads without modules) -->
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
-    <!-- Our app code -->
-    <script src="app.js"></script>
+    <!-- App JavaScript (order matters) -->
+    <script src="js/utils/constants.js"></script>
+    <script src="js/utils/datetime.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/utils/validation.js"></script>
+    <script src="js/utils/geolocation.js"></script>
+    <script src="js/utils/algorithms.js"></script>
+    
+    <script src="js/models/Task.js"></script>
+    <script src="js/models/Goal.js"></script>
+    <script src="js/models/HealthData.js"></script>
+    <script src="js/models/FavoriteLocation.js"></script>
+    <script src="js/models/DeviceInfo.js"></script>
+    
+    <script src="js/services/HealthMerger.js"></script>
+    <script src="js/services/OfflineQueue.js"></script>
+    <script src="js/services/GeofenceMonitor.js"></script>
+    <script src="js/services/NotificationManager.js"></script>
+    <script src="js/services/SyncManager.js"></script>
+    
+    <script src="js/components/Modal.js"></script>
+    <script src="js/components/TaskCard.js"></script>
+    <script src="js/components/GoalCard.js"></script>
+    <script src="js/components/HealthWidget.js"></script>
+    <script src="js/components/Thumbwheel.js"></script>
+    <script src="js/components/BreathBalloon.js"></script>
+    <script src="js/components/PieTimer.js"></script>
+    <script src="js/components/TopBar.js"></script>
+    <script src="js/components/BottomNav.js"></script>
+    
+    <script src="js/audio/sounds.js"></script>
+    
+    <script src="js/ui/SignIn.js"></script>
+    <script src="js/ui/Dashboard.js"></script>
+    <script src="js/ui/AddTask.js"></script>
+    <script src="js/ui/TaskList.js"></script>
+    <script src="js/ui/Mindfulness.js"></script>
+    <script src="js/ui/GoalsDetail.js"></script>
+    <script src="js/ui/ChallengeTimer.js"></script>
+    <script src="js/ui/Settings.js"></script>
+    
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('✓ Service Worker registered'))
+                    .catch(err => console.error('Service Worker registration failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>
-

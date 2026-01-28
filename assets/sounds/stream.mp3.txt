@@ -1,0 +1,3 @@
+# Placeholder for stream.mp3
+# Add a stream nature sound MP3 file here
+# Recommended: 30-60 second seamless loop

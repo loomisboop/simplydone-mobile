@@ -1,0 +1,3 @@
+# Placeholder for whitenoise.mp3
+# Add a whitenoise nature sound MP3 file here
+# Recommended: 30-60 second seamless loop

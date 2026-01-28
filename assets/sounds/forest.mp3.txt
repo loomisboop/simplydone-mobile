@@ -1,0 +1,3 @@
+# Placeholder for forest.mp3
+# Add a forest nature sound MP3 file here
+# Recommended: 30-60 second seamless loop

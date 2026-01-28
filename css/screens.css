@@ -1,0 +1,616 @@
+/* SDAPWA v1.0.0 - Screen Styles */
+
+/* ============================================================================
+   Sign In Screen
+   ========================================================================= */
+
+.signin-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--spacing-xl);
+    text-align: center;
+}
+
+.signin-logo {
+    font-size: 64px;
+    margin-bottom: var(--spacing-xl);
+}
+
+.signin-title {
+    font-size: var(--font-size-h1);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-m);
+}
+
+.signin-subtitle {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xxl);
+    line-height: 1.6;
+}
+
+.signin-features {
+    margin-bottom: var(--spacing-xxl);
+}
+
+.signin-feature {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-m);
+    margin-bottom: var(--spacing-m);
+    text-align: left;
+}
+
+.signin-feature-icon {
+    font-size: 24px;
+}
+
+.signin-feature-text {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+}
+
+.signin-google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-m);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-m) var(--spacing-xl);
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-medium);
+}
+
+.signin-google-btn:hover {
+    box-shadow: var(--shadow-heavy);
+}
+
+.signin-footer {
+    margin-top: var(--spacing-xxl);
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+}
+
+/* ============================================================================
+   Dashboard Screen
+   ========================================================================= */
+
+.dashboard-screen {
+    padding: var(--spacing-l);
+}
+
+.dashboard-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-m);
+}
+
+.section-title {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.section-toggle {
+    font-size: var(--font-size-small);
+    color: var(--color-primary);
+    background: none;
+    border: none;
+    padding: var(--spacing-s);
+    cursor: pointer;
+}
+
+.section-content.collapsed {
+    display: none;
+}
+
+/* ============================================================================
+   Add Task Screen
+   ========================================================================= */
+
+.addtask-screen {
+    padding: var(--spacing-l);
+}
+
+.task-type-tabs {
+    display: flex;
+    margin-bottom: var(--spacing-xl);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    overflow: hidden;
+}
+
+.task-type-tab {
+    flex: 1;
+    padding: var(--spacing-m);
+    background-color: var(--color-white);
+    border: none;
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.task-type-tab.active {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+}
+
+.task-form {
+    display: none;
+}
+
+.task-form.active {
+    display: block;
+}
+
+.form-section {
+    margin-bottom: var(--spacing-xxl);
+}
+
+.form-section-title {
+    font-size: var(--font-size-body);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-m);
+}
+
+.duration-options {
+    display: flex;
+    gap: var(--spacing-s);
+    flex-wrap: wrap;
+}
+
+.duration-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: var(--spacing-m);
+    background-color: var(--color-white);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.duration-btn.active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-lighter);
+    color: var(--color-primary);
+}
+
+.priority-options {
+    display: flex;
+    gap: var(--spacing-s);
+}
+
+.priority-btn {
+    flex: 1;
+    padding: var(--spacing-m);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.priority-btn.low {
+    background-color: var(--priority-low);
+    color: var(--color-white);
+    border-color: var(--priority-low);
+}
+
+.priority-btn.normal {
+    background-color: var(--priority-normal);
+    color: var(--color-white);
+    border-color: var(--priority-normal);
+}
+
+.priority-btn.high {
+    background-color: var(--priority-high);
+    color: var(--color-white);
+    border-color: var(--priority-high);
+}
+
+.priority-btn.urgent {
+    background-color: var(--priority-urgent);
+    color: var(--color-white);
+    border-color: var(--priority-urgent);
+}
+
+.priority-btn.active {
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.3);
+}
+
+.location-search-results {
+    margin-top: var(--spacing-m);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.location-result {
+    padding: var(--spacing-m);
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.location-result:last-child {
+    border-bottom: none;
+}
+
+.location-result:hover {
+    background-color: var(--color-background);
+}
+
+.location-result-icon {
+    margin-right: var(--spacing-s);
+}
+
+.location-result-name {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.location-result-address {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+}
+
+/* ============================================================================
+   Task List Screen
+   ========================================================================= */
+
+.tasklist-screen {
+    padding-top: var(--spacing-l);
+}
+
+.tasklist-filters {
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: var(--top-bar-height);
+    z-index: 10;
+}
+
+.filter-tab {
+    flex: 1;
+    padding: var(--spacing-m);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.filter-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.tasklist-sort {
+    padding: var(--spacing-m) var(--spacing-l);
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tasklist-search {
+    padding: var(--spacing-m) var(--spacing-l);
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.search-input {
+    width: 100%;
+    padding: var(--spacing-m);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-body);
+}
+
+.tasklist-content {
+    padding: var(--spacing-l);
+}
+
+.tasklist-group {
+    margin-bottom: var(--spacing-xl);
+}
+
+.tasklist-group-header {
+    font-size: var(--font-size-small);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-m);
+    padding-bottom: var(--spacing-s);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* ============================================================================
+   Mindfulness Screen
+   ========================================================================= */
+
+.mindfulness-screen {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--top-bar-height) - var(--bottom-nav-height));
+}
+
+.mindfulness-tabs {
+    display: flex;
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.mindfulness-tab {
+    flex: 1;
+    padding: var(--spacing-m);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.mindfulness-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.mindfulness-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-l);
+}
+
+.mindfulness-tab-content {
+    display: none;
+}
+
+.mindfulness-tab-content.active {
+    display: block;
+}
+
+.pattern-selector,
+.duration-selector,
+.sound-selector {
+    margin-bottom: var(--spacing-xl);
+}
+
+.selector-label {
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-s);
+}
+
+.control-buttons {
+    display: flex;
+    gap: var(--spacing-m);
+    margin-top: var(--spacing-xl);
+}
+
+.control-buttons button {
+    flex: 1;
+    padding: var(--spacing-l);
+    font-size: var(--font-size-body);
+    font-weight: 700;
+}
+
+/* ============================================================================
+   Goals Detail Screen
+   ========================================================================= */
+
+.goals-detail-screen {
+    padding: var(--spacing-l);
+}
+
+.add-goal-card {
+    border: 2px dashed var(--color-border);
+    background-color: var(--color-background);
+    padding: var(--spacing-xxl);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.add-goal-card:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-lighter);
+}
+
+.add-goal-icon {
+    font-size: 48px;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-m);
+}
+
+.add-goal-text {
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+/* ============================================================================
+   Challenge Timer Screen
+   ========================================================================= */
+
+.challenge-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    min-height: calc(100vh - var(--top-bar-height) - var(--bottom-nav-height));
+}
+
+.challenge-duration-selector {
+    display: flex;
+    gap: var(--spacing-m);
+    margin-bottom: var(--spacing-xxl);
+}
+
+.challenge-duration-btn {
+    flex: 1;
+    padding: var(--spacing-xl);
+    background-color: var(--color-white);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-light);
+}
+
+.challenge-duration-btn.active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    box-shadow: var(--shadow-medium);
+}
+
+.challenge-duration-btn .duration-label {
+    display: block;
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    margin-top: var(--spacing-xs);
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   Settings Screen
+   ========================================================================= */
+
+.settings-screen {
+    padding: var(--spacing-l);
+}
+
+.settings-section {
+    margin-bottom: var(--spacing-xxl);
+}
+
+.settings-section-title {
+    font-size: var(--font-size-body);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-m);
+}
+
+.settings-item {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-m);
+    margin-bottom: var(--spacing-s);
+}
+
+.settings-item-label {
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.settings-item-value {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+}
+
+.settings-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-border);
+    transition: var(--transition-fast);
+    border-radius: 28px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: var(--color-white);
+    transition: var(--transition-fast);
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--color-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+}
+
+/* ============================================================================
+   Responsive
+   ========================================================================= */
+
+@media (min-width: 768px) {
+    .dashboard-screen,
+    .addtask-screen,
+    .tasklist-content,
+    .goals-detail-screen,
+    .settings-screen {
+        max-width: 768px;
+        margin: 0 auto;
+    }
+    
+    .challenge-duration-selector {
+        max-width: 600px;
+    }
+}

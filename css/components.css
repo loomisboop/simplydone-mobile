@@ -1,0 +1,748 @@
+/* SDAPWA v1.0.0 - Component Styles */
+
+/* ============================================================================
+   Top Bar
+   ========================================================================= */
+
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--top-bar-height);
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-l);
+    z-index: 99;
+}
+
+.top-bar-title {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.top-bar-back {
+    font-size: 24px;
+    background: none;
+    border: none;
+    padding: var(--spacing-s);
+    color: var(--color-primary);
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.top-bar-actions {
+    display: flex;
+    gap: var(--spacing-s);
+}
+
+.sync-indicator {
+    font-size: 20px;
+}
+
+.sync-indicator.syncing {
+    animation: spin 1s linear infinite;
+}
+
+.sync-indicator.synced {
+    color: var(--color-success);
+}
+
+.sync-indicator.offline {
+    color: var(--color-text-secondary);
+}
+
+.sync-indicator.error {
+    color: var(--color-error);
+}
+
+/* ============================================================================
+   Task Cards
+   ========================================================================= */
+
+.task-card {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-m);
+    margin-bottom: var(--spacing-s);
+    box-shadow: var(--shadow-light);
+    position: relative;
+    overflow: hidden;
+}
+
+.task-card.small {
+    padding: var(--spacing-s);
+}
+
+.task-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-m);
+    margin-bottom: var(--spacing-s);
+}
+
+.task-card-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-tiny);
+    font-weight: 700;
+    color: var(--color-white);
+    flex-shrink: 0;
+}
+
+.task-card-badge.duration-7 {
+    background-color: var(--duration-7);
+}
+
+.task-card-badge.duration-15 {
+    background-color: var(--duration-15);
+}
+
+.task-card-badge.duration-35 {
+    background-color: var(--duration-35);
+}
+
+.task-card-badge.duration-any {
+    background-color: var(--duration-any);
+}
+
+.task-card-content {
+    flex: 1;
+}
+
+.task-card-name {
+    font-size: var(--font-size-h3);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+    word-wrap: break-word;
+}
+
+.task-card.small .task-card-name {
+    font-size: var(--font-size-body);
+}
+
+.task-card-details {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-m);
+}
+
+.task-card-priority {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.task-card-priority.low {
+    background-color: var(--priority-low);
+}
+
+.task-card-priority.normal {
+    background-color: var(--priority-normal);
+}
+
+.task-card-priority.high {
+    background-color: var(--priority-high);
+}
+
+.task-card-priority.urgent {
+    background-color: var(--priority-urgent);
+}
+
+.task-card-actions {
+    display: flex;
+    gap: var(--spacing-s);
+}
+
+.task-card-actions button {
+    flex: 1;
+    font-size: var(--font-size-small);
+    padding: var(--spacing-s) var(--spacing-m);
+    min-height: 36px;
+}
+
+.task-card.small .task-card-actions button {
+    min-height: 32px;
+}
+
+.task-btn-details {
+    background-color: var(--color-primary-lighter);
+    color: var(--color-primary);
+}
+
+.task-btn-park {
+    background-color: #FFF3E0;
+    color: #F57C00;
+}
+
+.task-btn-done {
+    background-color: var(--color-secondary);
+    color: var(--color-white);
+}
+
+/* Completed task card */
+.task-card.completed {
+    opacity: 0.6;
+}
+
+.task-card.completed .task-card-name {
+    text-decoration: line-through;
+}
+
+/* ============================================================================
+   Goal Cards
+   ========================================================================= */
+
+.goal-card {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-l);
+    margin-bottom: var(--spacing-l);
+    box-shadow: var(--shadow-light);
+}
+
+.goal-card-header {
+    margin-bottom: var(--spacing-m);
+}
+
+.goal-card-label {
+    font-size: var(--font-size-tiny);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.goal-card-name {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-s);
+}
+
+.goal-card-definition {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-m);
+    line-height: 1.6;
+}
+
+.goal-card-definition.collapsed {
+    max-height: 3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.goal-card-read-more {
+    color: var(--color-primary);
+    font-size: var(--font-size-small);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.goal-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: var(--spacing-xs);
+}
+
+.goal-progress-fill {
+    height: 100%;
+    background-color: var(--color-secondary);
+    transition: width var(--transition-medium);
+}
+
+.goal-progress-text {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-m);
+}
+
+.goal-steps {
+    margin-bottom: var(--spacing-m);
+}
+
+.goal-step {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-m);
+    padding: var(--spacing-s) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.goal-step:last-child {
+    border-bottom: none;
+}
+
+.goal-step-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-small);
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.goal-step-checkbox.checked {
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
+}
+
+.goal-step-checkbox.checked::after {
+    content: '✓';
+    color: var(--color-white);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.goal-step-content {
+    flex: 1;
+}
+
+.goal-step-description {
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.goal-step.completed .goal-step-description {
+    text-decoration: line-through;
+    color: var(--color-text-secondary);
+}
+
+.goal-step-date {
+    font-size: var(--font-size-tiny);
+    color: var(--color-text-secondary);
+}
+
+.goal-card-actions {
+    display: flex;
+    gap: var(--spacing-m);
+    justify-content: space-between;
+}
+
+.goal-card-actions button {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: var(--font-size-small);
+    padding: var(--spacing-s);
+    cursor: pointer;
+}
+
+.goal-card-actions button.danger {
+    color: var(--color-error);
+}
+
+/* Goals Button (Dashboard) */
+.goals-button {
+    background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-primary-light) 100%);
+    border: 1px solid var(--color-primary-light);
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-m);
+    margin-bottom: var(--spacing-l);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.goals-button:active {
+    transform: scale(0.98);
+}
+
+.goals-button-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-s);
+}
+
+.goals-button-label {
+    font-size: var(--font-size-body);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+}
+
+.goals-button-names {
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+}
+
+.goals-button-abbrev {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.goals-button-progress {
+    display: flex;
+    gap: var(--spacing-m);
+}
+
+.goal-mini-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.goal-mini-bar {
+    width: 40px;
+    height: 4px;
+    background-color: var(--color-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.goal-mini-fill {
+    height: 100%;
+    background-color: var(--color-secondary);
+}
+
+.goal-mini-text {
+    font-size: var(--font-size-tiny);
+    color: var(--color-text-secondary);
+}
+
+/* ============================================================================
+   Health Widget
+   ========================================================================= */
+
+.health-widget {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-m);
+    margin-bottom: var(--spacing-l);
+}
+
+.health-widget-title {
+    font-size: var(--font-size-body);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-m);
+}
+
+.health-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: var(--spacing-m);
+}
+
+.health-stat {
+    text-align: center;
+}
+
+.health-stat-value {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+.health-stat-value.steps {
+    color: var(--color-orange);
+}
+
+.health-stat-value.exercise {
+    color: var(--color-info);
+}
+
+.health-stat-value.mindfulness {
+    color: #9C27B0;
+}
+
+.health-stat-label {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+}
+
+/* ============================================================================
+   Stats Summary (Dashboard)
+   ========================================================================= */
+
+.stats-summary {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-m);
+    margin-bottom: var(--spacing-l);
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-around;
+    gap: var(--spacing-m);
+    margin-bottom: var(--spacing-s);
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-value.doing {
+    color: var(--color-secondary);
+}
+
+.stat-value.being {
+    color: var(--color-info);
+}
+
+.stat-value.steps {
+    color: var(--color-orange);
+}
+
+.stat-label {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+}
+
+.stats-completed {
+    text-align: center;
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    padding-top: var(--spacing-s);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ============================================================================
+   Modal
+   ========================================================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background-color: var(--color-white);
+    border-radius: var(--radius-medium);
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-heavy);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-l);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.modal-close {
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-s);
+}
+
+.modal-body {
+    padding: var(--spacing-l);
+}
+
+.modal-footer {
+    display: flex;
+    gap: var(--spacing-m);
+    padding: var(--spacing-l);
+    border-top: 1px solid var(--color-border);
+}
+
+.modal-footer button {
+    flex: 1;
+}
+
+/* ============================================================================
+   Breathing Balloon
+   ========================================================================= */
+
+.breath-balloon-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-xl);
+}
+
+.breath-balloon {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #BBDEFB, #1976D2);
+    box-shadow: 0 10px 30px rgba(25, 118, 210, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-slow);
+    margin-bottom: var(--spacing-xl);
+}
+
+.breath-balloon.inhale {
+    transform: scale(1);
+}
+
+.breath-balloon.hold {
+    transform: scale(1);
+}
+
+.breath-balloon.exhale {
+    transform: scale(0.6);
+}
+
+.breath-balloon-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-white);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.breath-status {
+    font-size: var(--font-size-h3);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-m);
+    text-align: center;
+}
+
+.breath-timer {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* ============================================================================
+   Pie Timer (Challenge Timer)
+   ========================================================================= */
+
+.pie-timer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-xl);
+}
+
+.pie-timer-canvas {
+    margin-bottom: var(--spacing-xl);
+}
+
+.pie-timer-display {
+    font-size: var(--font-size-hero);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-m);
+    text-align: center;
+    line-height: 1;
+}
+
+.pie-timer-status {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
+}
+
+/* ============================================================================
+   Empty States
+   ========================================================================= */
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xxl) var(--spacing-l);
+    color: var(--color-text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-l);
+}
+
+.empty-state-title {
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-s);
+}
+
+.empty-state-message {
+    font-size: var(--font-size-body);
+    line-height: 1.6;
+}
+
+/* ============================================================================
+   Responsive
+   ========================================================================= */
+
+@media (min-width: 768px) {
+    .breath-balloon {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .task-card {
+        padding: var(--spacing-l);
+    }
+    
+    .goal-card {
+        padding: var(--spacing-xl);
+    }
+}

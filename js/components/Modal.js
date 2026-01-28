@@ -1,0 +1,2 @@
+// SDAPWA v1.0.0 - Modal Component
+const Modal={show(a,b){const c=document.createElement('div');c.className='modal-overlay';c.innerHTML='<div class="modal-content"><div class="modal-header"><h2 class="modal-title">'+a+'</h2><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div><div class="modal-body">'+b+'</div></div>';document.body.appendChild(c)}};window.Modal=Modal;console.log('✓ Modal loaded');
