@@ -55,7 +55,7 @@ class SyncManager {
     // Real-time task listener
     listenToTasks() {
         const unsubscribe = this.db
-            .collection(`users/${this.userId}/tasks`)
+            .collection('users').doc(this.userId).collection('tasks')
             .onSnapshot((snapshot) => {
                 console.log(`📥 Tasks updated: ${snapshot.size} tasks`);
                 
@@ -80,7 +80,7 @@ class SyncManager {
     // Real-time goal listener
     listenToGoals() {
         const unsubscribe = this.db
-            .collection(`users/${this.userId}/goals`)
+            .collection('users').doc(this.userId).collection('goals')
             .where('archived', '==', false)
             .limit(3)
             .onSnapshot((snapshot) => {
@@ -109,7 +109,7 @@ class SyncManager {
         const today = window.DateTimeUtils.getTodayDateString();
         
         const unsubscribe = this.db
-            .collection(`users/${this.userId}/health_data`)
+            .collection('users').doc(this.userId).collection('health_data')
             .doc(today)
             .onSnapshot((doc) => {
                 if (doc.exists) {
@@ -141,7 +141,7 @@ class SyncManager {
         try {
             // Sync tasks
             const tasksSnapshot = await this.db
-                .collection(`users/${this.userId}/tasks`)
+                .collection('users').doc(this.userId).collection('tasks')
                 .get();
             const tasks = tasksSnapshot.docs.map(doc => 
                 window.Task.fromFirestore({ id: doc.id, ...doc.data() })
@@ -150,7 +150,7 @@ class SyncManager {
             
             // Sync goals
             const goalsSnapshot = await this.db
-                .collection(`users/${this.userId}/goals`)
+                .collection('users').doc(this.userId).collection('goals')
                 .where('archived', '==', false)
                 .limit(3)
                 .get();
@@ -162,7 +162,7 @@ class SyncManager {
             // Sync today's health data
             const today = window.DateTimeUtils.getTodayDateString();
             const healthDoc = await this.db
-                .collection(`users/${this.userId}/health_data`)
+                .collection('users').doc(this.userId).collection('health_data')
                 .doc(today)
                 .get();
             if (healthDoc.exists) {

@@ -137,7 +137,7 @@ const TaskListScreen={
         
         try{
             const userId=window.Auth.getUserId();
-            await window.db.collection('users/'+userId+'/tasks').doc(taskId).update(task.toFirestore());
+            await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update(task.toFirestore());
             
             if(window.syncManager){
                 const cached=window.syncManager.getCachedTasks();
@@ -167,7 +167,7 @@ const TaskListScreen={
         
         try{
             const userId=window.Auth.getUserId();
-            await window.db.collection('users/'+userId+'/tasks').doc(taskId).update({
+            await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update({
                 completed_at:task.completed_at,
                 completed_on_device:task.completed_on_device,
                 modified_at:task.modified_at,
@@ -204,7 +204,7 @@ const TaskListScreen={
         
         try{
             const userId=window.Auth.getUserId();
-            await window.db.collection('users/'+userId+'/tasks').doc(taskId).update({
+            await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update({
                 deleted:true,
                 modified_at:task.modified_at,
                 modified_by:task.modified_by,

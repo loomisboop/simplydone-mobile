@@ -178,9 +178,9 @@ const DashboardScreen = {
             // Calculate points BEFORE syncing
             const points = window.Algorithms.calculateChallengePoints(task);
             
-            // Update Firestore
+            // CRITICAL FIX: Use proper Firestore path
             const userId = window.Auth.getUserId();
-            await window.db.collection('users/' + userId + '/tasks').doc(taskId).update({
+            await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update({
                 completed_at: task.completed_at,
                 completed_on_device: task.completed_on_device,
                 modified_at: task.modified_at,
@@ -188,7 +188,9 @@ const DashboardScreen = {
                 sync_version: firebase.firestore.FieldValue.increment(1)
             });
             
-            // CRITICAL FIX: Update local cache immediately
+            console.log('Task completion saved to Firestore:', taskId);
+            
+            // Update local cache immediately
             if (window.syncManager) {
                 const cachedTasks = window.syncManager.getCachedTasks();
                 const taskIndex = cachedTasks.findIndex(t => t.id === taskId);

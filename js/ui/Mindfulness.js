@@ -216,7 +216,7 @@ const MindfulnessScreen={
         const today=window.DateTimeUtils.getTodayDateString();
         const userId=window.Auth.getUserId();
         try{
-            const doc=await window.db.collection('users/'+userId+'/health_data').doc(today).get();
+            const doc=await window.db.collection('users').doc(userId).collection('health_data').doc(today).get();
             return doc.exists?doc.data():{steps_walked:0,exercise_minutes:0,mindfulness_minutes:0};
         }catch(e){
             console.error('Error loading health:',e);
@@ -236,7 +236,7 @@ const MindfulnessScreen={
         const healthData=window.HealthData.fromManualEntry(today,steps,exercise,mindfulness,deviceId);
         
         try{
-            await window.db.collection('users/'+userId+'/health_data').doc(today).set(healthData.toFirestore(),{merge:true});
+            await window.db.collection('users').doc(userId).collection('health_data').doc(today).set(healthData.toFirestore(),{merge:true});
             window.App.showToast('Health data saved!','success');
             this.renderHealth();
         }catch(e){

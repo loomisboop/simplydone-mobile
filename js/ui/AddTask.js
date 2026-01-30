@@ -89,8 +89,9 @@ const AddTaskScreen={
             return;
         }
         
-        const startDate=new Date(start);
-        const stopDate=new Date(stop);
+        // CRITICAL FIX: Parse as local time, then convert to UTC ISO properly
+        const startDate=this.parseLocalDateTime(start);
+        const stopDate=this.parseLocalDateTime(stop);
         
         if(stopDate<=startDate){
             window.App.showToast('Stop time must be after start time','error');
@@ -99,13 +100,13 @@ const AddTaskScreen={
         
         try{
             const deviceId=window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
-            const task=window.Task.newScheduled(name,this.selectedDuration,startDate.toISOString(),stopDate.toISOString(),deviceId);
+            const task=window.Task.newScheduled(name,this.selectedDuration,startDate,stopDate,deviceId);
             task.before_day_ends=bmde;
             
             const userId=window.Auth.getUserId();
-            await window.db.collection('users/'+userId+'/tasks').doc(task.id).set(task.toFirestore());
+            await window.db.collection('users').doc(userId).collection('tasks').doc(task.id).set(task.toFirestore());
             
-            // CRITICAL FIX: Update cache immediately and trigger refresh
+            // Update cache immediately and trigger refresh
             if(window.syncManager){
                 const cached=window.syncManager.getCachedTasks();
                 cached.push(task);
@@ -119,6 +120,25 @@ const AddTaskScreen={
             console.error('Error creating task:',e);
             window.App.showToast('Failed to create task','error');
         }
+    },
+    
+    parseLocalDateTime(localString){
+        // datetime-local format: "2026-01-30T18:00"
+        // Parse as LOCAL time, convert to UTC ISO string with Z suffix
+        const parts=localString.split('T');
+        const dateParts=parts[0].split('-');
+        const timeParts=parts[1].split(':');
+        const year=parseInt(dateParts[0]);
+        const month=parseInt(dateParts[1])-1;
+        const day=parseInt(dateParts[2]);
+        const hour=parseInt(timeParts[0]);
+        const minute=parseInt(timeParts[1]);
+        
+        // Create date in LOCAL timezone
+        const localDate=new Date(year,month,day,hour,minute,0,0);
+        
+        // Return UTC ISO string
+        return localDate.toISOString();
     },
     
     async createLocationTask(){
@@ -143,7 +163,7 @@ const AddTaskScreen={
             const task=window.Task.newLocation(name,this.selectedDuration,address.substring(0,100),lat,lon,radius,deviceId);
             
             const userId=window.Auth.getUserId();
-            await window.db.collection('users/'+userId+'/tasks').doc(task.id).set(task.toFirestore());
+            await window.db.collection('users').doc(userId).collection('tasks').doc(task.id).set(task.toFirestore());
             
             // Update cache and trigger refresh
             if(window.syncManager){
