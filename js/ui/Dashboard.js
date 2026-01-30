@@ -171,8 +171,14 @@ const DashboardScreen = {
         
         try {
             const deviceId = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
+            
+            // Complete the task (sets completed_at timestamp)
             task.complete(deviceId);
             
+            // Calculate points BEFORE syncing
+            const points = window.Algorithms.calculateChallengePoints(task);
+            
+            // Update Firestore
             const userId = window.Auth.getUserId();
             await window.db.collection('users/' + userId + '/tasks').doc(taskId).update({
                 completed_at: task.completed_at,
@@ -182,7 +188,35 @@ const DashboardScreen = {
                 sync_version: firebase.firestore.FieldValue.increment(1)
             });
             
-            window.App.showToast(window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED, 'success');
+            // CRITICAL FIX: Update local cache immediately
+            if (window.syncManager) {
+                const cachedTasks = window.syncManager.getCachedTasks();
+                const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
+                if (taskIndex !== -1) {
+                    cachedTasks[taskIndex] = task;
+                    window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS_CACHE, JSON.stringify(cachedTasks));
+                }
+            }
+            
+            // Update local tasks array
+            const localIndex = this.tasks.findIndex(t => t.id === taskId);
+            if (localIndex !== -1) {
+                this.tasks[localIndex] = task;
+            }
+            
+            // Trigger UI refresh immediately
+            this.renderDoTheseThreeNow();
+            this.renderBeforeMyDayEnds();
+            this.renderStats();
+            
+            // Dispatch event for other screens
+            window.dispatchEvent(new CustomEvent('tasks-changed', { detail: this.tasks }));
+            
+            // Show success with points earned
+            const message = points > 0 ? 
+                window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED + ' +' + points + ' points!' :
+                window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED;
+            window.App.showToast(message, 'success');
         } catch (error) {
             console.error('Error completing task:', error);
             window.App.showToast(window.CONSTANTS.ERROR_MESSAGES.TASK_UPDATE_FAILED, 'error');

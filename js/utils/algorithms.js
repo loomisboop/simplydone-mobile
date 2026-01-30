@@ -252,9 +252,30 @@ const Algorithms = {
     },
     
     // Calculate points for challenge completion
-    calculateChallengePoints(durationMinutes) {
-        // Points = duration (matches SDPC)
-        return durationMinutes;
+    calculateChallengePoints(task) {
+        // NEW: Points based on completion time vs challenge time
+        if (!task.completed_at || !task.start || !task.stop) {
+            return 0;
+        }
+        
+        const completedTime = window.DateTimeUtils.parseISO(task.completed_at);
+        const startTime = window.DateTimeUtils.parseISO(task.start);
+        const stopTime = window.DateTimeUtils.parseISO(task.stop);
+        const challengeTime = new Date(startTime.getTime() + (task.duration_minutes * 60 * 1000));
+        
+        // Completed before challenge time = HIGHER points
+        if (completedTime <= challengeTime) {
+            const durationBonus = Math.floor(task.duration_minutes / 10);
+            return 10 + durationBonus; // Base 10 + bonus for longer tasks
+        }
+        
+        // Completed after challenge but before deadline = LOWER points  
+        if (completedTime <= stopTime) {
+            return 5;
+        }
+        
+        // Completed after deadline = No points
+        return 0;
     },
     
     // Calculate goal progress
