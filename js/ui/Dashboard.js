@@ -1,9 +1,10 @@
-// SDAPWA v1.0.0 - Dashboard Screen
+// SDAPWA v1.1.2 - Dashboard Screen (FIXED)
 
 const DashboardScreen = {
     tasks: [],
     goals: [],
     healthData: null,
+    eventListenersAttached: false,
     
     render(container) {
         this.loadData();
@@ -37,22 +38,26 @@ const DashboardScreen = {
         this.renderBeforeMyDayEnds();
         this.renderStats();
         
-        window.addEventListener('tasks-changed', (e) => {
-            this.tasks = e.detail;
-            this.renderDoTheseThreeNow();
-            this.renderBeforeMyDayEnds();
-            this.renderStats();
-        });
-        
-        window.addEventListener('goals-changed', (e) => {
-            this.goals = e.detail;
-            this.renderGoalsButton();
-        });
-        
-        window.addEventListener('health-data-changed', (e) => {
-            this.healthData = e.detail;
-            this.renderStats();
-        });
+        if (!this.eventListenersAttached) {
+            window.addEventListener('tasks-changed', (e) => {
+                this.tasks = e.detail;
+                this.renderDoTheseThreeNow();
+                this.renderBeforeMyDayEnds();
+                this.renderStats();
+            });
+            
+            window.addEventListener('goals-changed', (e) => {
+                this.goals = e.detail;
+                this.renderGoalsButton();
+            });
+            
+            window.addEventListener('health-data-changed', (e) => {
+                this.healthData = e.detail;
+                this.renderStats();
+            });
+            
+            this.eventListenersAttached = true;
+        }
     },
     
     loadData() {
@@ -60,6 +65,13 @@ const DashboardScreen = {
             this.tasks = window.syncManager.getCachedTasks();
             this.goals = window.syncManager.getCachedGoals();
             this.healthData = window.syncManager.getCachedHealthData();
+        } else {
+            const tasksData = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+            this.tasks = tasksData.map(t => window.Task.fromFirestore(t));
+            const goalsData = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.GOALS, []);
+            this.goals = goalsData.map(g => window.Goal.fromFirestore(g));
+            const healthDataRaw = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.HEALTH_DATA_TODAY);
+            this.healthData = healthDataRaw ? window.HealthData.fromFirestore(healthDataRaw) : null;
         }
     },
     
@@ -74,7 +86,7 @@ const DashboardScreen = {
         const container = document.getElementById('goals-button-container');
         if (!container) return;
         
-        if (this.goals.length === 0) {
+        if (!this.goals || this.goals.length === 0) {
             container.innerHTML = '<button class="goals-button" onclick="window.App.showScreen(\'goalsdetail\')"><div class="goals-button-top"><span class="goals-button-label">No Goals Set</span></div><p style="text-align:center;color:#757575;font-size:14px;margin-top:8px;">Tap to add your first goal</p></button>';
             return;
         }
@@ -83,7 +95,7 @@ const DashboardScreen = {
         const abbrev = window.Algorithms.getGoalsAbbreviation(this.goals);
         const progressBars = this.goals.map(goal => {
             const progress = window.Algorithms.calculateGoalProgress(goal);
-            const percentage = (progress.completed / progress.total) * 100;
+            const percentage = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
             return '<div class="goal-mini-progress"><div class="goal-mini-bar"><div class="goal-mini-fill" style="width:' + percentage + '%"></div></div><span class="goal-mini-text">' + progress.completed + '/' + progress.total + '</span></div>';
         }).join('');
         
@@ -134,19 +146,26 @@ const DashboardScreen = {
             timeDetails = 'Flexible timing';
         }
         
-        return '<div class="task-card ' + (small ? 'small' : '') + '" data-task-id="' + task.id + '"><div class="task-card-header"><div class="task-card-badge" style="background-color:' + durationColor + '">' + (task.duration_minutes || '∞') + 'm</div><div class="task-card-content"><div class="task-card-name">' + task.name + '</div><div class="task-card-details">' + timeDetails + '</div></div></div><div class="task-card-actions"><button class="task-btn-details" onclick="DashboardScreen.showTaskDetails(\'' + task.id + '\')">Details</button><button class="task-btn-park" onclick="DashboardScreen.showParkMenu(\'' + task.id + '\')">Park</button><button class="task-btn-done" onclick="DashboardScreen.completeTask(\'' + task.id + '\')">✓ Done</button></div><div class="task-card-priority" style="background-color:' + priorityColor + '"></div></div>';
+        const escapedId = task.id.replace(/'/g, "\\'");
+        
+        return '<div class="task-card ' + (small ? 'small' : '') + '" data-task-id="' + task.id + '"><div class="task-card-header"><div class="task-card-badge" style="background-color:' + durationColor + '">' + (task.duration_minutes || '∞') + 'm</div><div class="task-card-content"><div class="task-card-name">' + task.name + '</div><div class="task-card-details">' + timeDetails + '</div></div></div><div class="task-card-actions"><button class="task-btn-details" onclick="DashboardScreen.showTaskDetails(\'' + escapedId + '\')">Details</button><button class="task-btn-park" onclick="DashboardScreen.showParkMenu(\'' + escapedId + '\')">Park</button><button class="task-btn-done" onclick="DashboardScreen.completeTask(\'' + escapedId + '\')">✓ Done</button></div><div class="task-card-priority" style="background-color:' + priorityColor + '"></div></div>';
     },
     
     renderStats() {
         const container = document.getElementById('stats-summary-container');
         if (!container) return;
         
-        const doingPoints = 88;
-        const beingPoints = 19;
-        const steps = this.healthData ? this.healthData.steps_walked : 0;
-        const completedToday = this.tasks.filter(t => t.completed_at && window.DateTimeUtils.isToday(t.completed_at)).length;
+        const completedToday = this.tasks.filter(t => t.completed_at && window.DateTimeUtils.isToday(t.completed_at));
         
-        container.innerHTML = '<div class="stats-summary"><div class="stats-row"><div class="stat-item"><span class="stat-value doing">' + doingPoints + '</span><span class="stat-label">Doing</span></div><div class="stat-item"><span class="stat-value being">' + beingPoints + '</span><span class="stat-label">Being</span></div><div class="stat-item"><span class="stat-value steps">' + steps.toLocaleString() + '</span><span class="stat-label">🚶 Steps</span></div></div><div class="stats-completed">Completed Today: ' + completedToday + '</div></div>';
+        let doingPoints = 0;
+        completedToday.forEach(task => {
+            doingPoints += window.Algorithms.calculateChallengePoints(task);
+        });
+        
+        const beingPoints = this.healthData ? Math.floor((this.healthData.mindfulness_minutes || 0) * 1.5) : 0;
+        const steps = this.healthData ? this.healthData.steps_walked : 0;
+        
+        container.innerHTML = '<div class="stats-summary"><div class="stats-row"><div class="stat-item"><span class="stat-value doing">' + doingPoints + '</span><span class="stat-label">Doing</span></div><div class="stat-item"><span class="stat-value being">' + beingPoints + '</span><span class="stat-label">Being</span></div><div class="stat-item"><span class="stat-value steps">' + steps.toLocaleString() + '</span><span class="stat-label">🚶 Steps</span></div></div><div class="stats-completed">Completed Today: ' + completedToday.length + '</div></div>';
     },
     
     toggleBMDE() {
@@ -167,19 +186,28 @@ const DashboardScreen = {
     
     async completeTask(taskId) {
         const task = this.tasks.find(t => t.id === taskId);
-        if (!task) return;
+        if (!task) {
+            console.error('Task not found:', taskId);
+            return;
+        }
+        
+        const taskCard = document.querySelector('[data-task-id="' + taskId + '"]');
+        const doneBtn = taskCard ? taskCard.querySelector('.task-btn-done') : null;
+        if (doneBtn) {
+            doneBtn.disabled = true;
+            doneBtn.textContent = '...';
+        }
         
         try {
             const deviceId = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
-            
-            // Complete the task (sets completed_at timestamp)
             task.complete(deviceId);
-            
-            // Calculate points BEFORE syncing
             const points = window.Algorithms.calculateChallengePoints(task);
             
-            // CRITICAL FIX: Use proper Firestore path
             const userId = window.Auth.getUserId();
+            if (!userId) {
+                throw new Error('Not signed in');
+            }
+            
             await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update({
                 completed_at: task.completed_at,
                 completed_on_device: task.completed_on_device,
@@ -190,39 +218,74 @@ const DashboardScreen = {
             
             console.log('Task completion saved to Firestore:', taskId);
             
-            // Update local cache immediately
-            if (window.syncManager) {
-                const cachedTasks = window.syncManager.getCachedTasks();
-                const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
-                if (taskIndex !== -1) {
-                    cachedTasks[taskIndex] = task;
-                    window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS_CACHE, JSON.stringify(cachedTasks));
-                }
+            const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+            const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+                cachedTasks[taskIndex] = task.toFirestore();
+                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
             }
             
-            // Update local tasks array
             const localIndex = this.tasks.findIndex(t => t.id === taskId);
             if (localIndex !== -1) {
                 this.tasks[localIndex] = task;
             }
             
-            // Trigger UI refresh immediately
             this.renderDoTheseThreeNow();
             this.renderBeforeMyDayEnds();
             this.renderStats();
             
-            // Dispatch event for other screens
             window.dispatchEvent(new CustomEvent('tasks-changed', { detail: this.tasks }));
             
-            // Show success with points earned
-            const message = points > 0 ? 
-                window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED + ' +' + points + ' points!' :
-                window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED;
+            const message = points > 0 ? window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED + ' +' + points + ' points!' : window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED;
             window.App.showToast(message, 'success');
+            
         } catch (error) {
             console.error('Error completing task:', error);
-            window.App.showToast(window.CONSTANTS.ERROR_MESSAGES.TASK_UPDATE_FAILED, 'error');
+            
+            if (error.code === 'resource-exhausted') {
+                this.saveCompletionToOfflineQueue(task);
+                const localIndex = this.tasks.findIndex(t => t.id === taskId);
+                if (localIndex !== -1) {
+                    this.tasks[localIndex] = task;
+                }
+                
+                const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+                const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
+                if (taskIndex !== -1) {
+                    cachedTasks[taskIndex] = task.toFirestore();
+                    window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
+                }
+                
+                this.renderDoTheseThreeNow();
+                this.renderBeforeMyDayEnds();
+                this.renderStats();
+                
+                window.App.showToast('Marked complete locally - will sync later', 'warning');
+            } else {
+                window.App.showToast(window.CONSTANTS.ERROR_MESSAGES.TASK_UPDATE_FAILED, 'error');
+                if (doneBtn) {
+                    doneBtn.disabled = false;
+                    doneBtn.textContent = '✓ Done';
+                }
+            }
         }
+    },
+    
+    saveCompletionToOfflineQueue(task) {
+        const queue = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.OFFLINE_QUEUE, []);
+        queue.push({
+            action: 'update',
+            type: 'task',
+            data: {
+                id: task.id,
+                completed_at: task.completed_at,
+                completed_on_device: task.completed_on_device,
+                modified_at: task.modified_at,
+                modified_by: task.modified_by
+            },
+            timestamp: window.DateTimeUtils.utcNowISO()
+        });
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.OFFLINE_QUEUE, queue);
     },
     
     showTaskDetails(taskId) {

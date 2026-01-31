@@ -1,4 +1,4 @@
-// SDAPWA v1.0.0 - Sync Manager
+// SDAPWA v1.1.2 - Sync Manager (FIXED with quota handling)
 
 class SyncManager {
     constructor(userId) {
@@ -7,6 +7,10 @@ class SyncManager {
         this.listeners = [];
         this.syncInterval = null;
         this.isOnline = navigator.onLine;
+        this.isSyncing = false;
+        this.quotaExceeded = false;
+        this.lastSyncAttempt = null;
+        this.syncErrorCount = 0;
         
         // Listen for online/offline events
         window.addEventListener('online', () => this.onOnline());
@@ -19,14 +23,20 @@ class SyncManager {
     startSync() {
         console.log('🔄 Starting sync...');
         
+        // Reset quota flag on fresh start
+        this.quotaExceeded = false;
+        this.syncErrorCount = 0;
+        
         // Real-time listeners (immediate updates)
         this.listenToTasks();
         this.listenToGoals();
         this.listenToHealthData();
         
-        // Periodic sync (backup, every 30 seconds)
+        // Periodic sync (backup, every 60 seconds - increased from 30 to reduce quota usage)
         this.syncInterval = setInterval(() => {
-            this.forceSyncAll();
+            if (!this.quotaExceeded) {
+                this.forceSyncAll();
+            }
         }, window.CONSTANTS.SYNC_SETTINGS.INTERVAL_MS);
         
         // Initial sync
@@ -40,7 +50,13 @@ class SyncManager {
         console.log('⏹️ Stopping sync...');
         
         // Unsubscribe from listeners
-        this.listeners.forEach(unsubscribe => unsubscribe());
+        this.listeners.forEach(unsubscribe => {
+            try {
+                unsubscribe();
+            } catch (e) {
+                console.error('Error unsubscribing:', e);
+            }
+        });
         this.listeners = [];
         
         // Clear interval
@@ -52,89 +68,155 @@ class SyncManager {
         console.log('✓ Sync stopped');
     }
     
-    // Real-time task listener
+    // Real-time task listener with error handling
     listenToTasks() {
-        const unsubscribe = this.db
-            .collection('users').doc(this.userId).collection('tasks')
-            .onSnapshot((snapshot) => {
-                console.log(`📥 Tasks updated: ${snapshot.size} tasks`);
-                
-                const tasks = [];
-                snapshot.forEach((doc) => {
-                    tasks.push(window.Task.fromFirestore({ id: doc.id, ...doc.data() }));
+        try {
+            const unsubscribe = this.db
+                .collection('users').doc(this.userId).collection('tasks')
+                .onSnapshot((snapshot) => {
+                    console.log(`📥 Tasks updated: ${snapshot.size} tasks`);
+                    
+                    const tasks = [];
+                    snapshot.forEach((doc) => {
+                        tasks.push(window.Task.fromFirestore({ id: doc.id, ...doc.data() }));
+                    });
+                    
+                    // Update local cache
+                    this.updateLocalTasks(tasks);
+                    
+                    // Notify UI
+                    this.notifyTasksChanged(tasks);
+                    
+                    // Reset error count on success
+                    this.syncErrorCount = 0;
+                    
+                }, (error) => {
+                    this.handleSyncError('Task listener', error);
                 });
-                
-                // Update local cache
-                this.updateLocalTasks(tasks);
-                
-                // Notify UI
-                this.notifyTasksChanged(tasks);
-                
-            }, (error) => {
-                console.error('Task listener error:', error);
-            });
-        
-        this.listeners.push(unsubscribe);
+            
+            this.listeners.push(unsubscribe);
+        } catch (error) {
+            console.error('Failed to set up task listener:', error);
+        }
     }
     
     // Real-time goal listener
     listenToGoals() {
-        const unsubscribe = this.db
-            .collection('users').doc(this.userId).collection('goals')
-            .where('archived', '==', false)
-            .limit(3)
-            .onSnapshot((snapshot) => {
-                console.log(`📥 Goals updated: ${snapshot.size} goals`);
-                
-                const goals = [];
-                snapshot.forEach((doc) => {
-                    goals.push(window.Goal.fromFirestore({ id: doc.id, ...doc.data() }));
+        try {
+            const unsubscribe = this.db
+                .collection('users').doc(this.userId).collection('goals')
+                .where('archived', '==', false)
+                .limit(3)
+                .onSnapshot((snapshot) => {
+                    console.log(`📥 Goals updated: ${snapshot.size} goals`);
+                    
+                    const goals = [];
+                    snapshot.forEach((doc) => {
+                        goals.push(window.Goal.fromFirestore({ id: doc.id, ...doc.data() }));
+                    });
+                    
+                    // Update local cache
+                    this.updateLocalGoals(goals);
+                    
+                    // Notify UI
+                    this.notifyGoalsChanged(goals);
+                    
+                }, (error) => {
+                    this.handleSyncError('Goal listener', error);
                 });
-                
-                // Update local cache
-                this.updateLocalGoals(goals);
-                
-                // Notify UI
-                this.notifyGoalsChanged(goals);
-                
-            }, (error) => {
-                console.error('Goal listener error:', error);
-            });
-        
-        this.listeners.push(unsubscribe);
+            
+            this.listeners.push(unsubscribe);
+        } catch (error) {
+            console.error('Failed to set up goal listener:', error);
+        }
     }
     
     // Real-time health data listener (today only)
     listenToHealthData() {
-        const today = window.DateTimeUtils.getTodayDateString();
-        
-        const unsubscribe = this.db
-            .collection('users').doc(this.userId).collection('health_data')
-            .doc(today)
-            .onSnapshot((doc) => {
-                if (doc.exists) {
-                    console.log(`📥 Health data updated: ${today}`);
-                    const healthData = window.HealthData.fromFirestore({ date: doc.id, ...doc.data() });
-                    
-                    // Update local cache
-                    this.updateLocalHealthData(healthData);
-                    
-                    // Notify UI
-                    this.notifyHealthDataChanged(healthData);
-                }
-            }, (error) => {
-                console.error('Health data listener error:', error);
-            });
-        
-        this.listeners.push(unsubscribe);
+        try {
+            const today = window.DateTimeUtils.getTodayDateString();
+            
+            const unsubscribe = this.db
+                .collection('users').doc(this.userId).collection('health_data')
+                .doc(today)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        console.log(`📥 Health data updated: ${today}`);
+                        const healthData = window.HealthData.fromFirestore({ date: doc.id, ...doc.data() });
+                        
+                        // Update local cache
+                        this.updateLocalHealthData(healthData);
+                        
+                        // Notify UI
+                        this.notifyHealthDataChanged(healthData);
+                    }
+                }, (error) => {
+                    this.handleSyncError('Health data listener', error);
+                });
+            
+            this.listeners.push(unsubscribe);
+        } catch (error) {
+            console.error('Failed to set up health data listener:', error);
+        }
     }
     
-    // Force sync all data (backup method)
+    // Handle sync errors with quota detection
+    handleSyncError(source, error) {
+        console.error(`${source} error:`, error);
+        
+        this.syncErrorCount++;
+        
+        // Detect quota exceeded error
+        if (error.code === 'resource-exhausted' || 
+            (error.message && error.message.includes('Quota exceeded'))) {
+            
+            console.warn('⚠️ Firebase quota exceeded - pausing sync');
+            this.quotaExceeded = true;
+            
+            // Show user-friendly message (only once)
+            if (this.syncErrorCount === 1) {
+                this.showToast('Sync paused: Daily quota exceeded. Data saved locally.', 'warning');
+            }
+            
+            // Stop real-time listeners to prevent further quota usage
+            this.listeners.forEach(unsubscribe => {
+                try {
+                    unsubscribe();
+                } catch (e) {}
+            });
+            this.listeners = [];
+        }
+    }
+    
+    // Force sync all data (backup method) with throttling
     async forceSyncAll() {
+        // Don't sync if offline
         if (!this.isOnline) {
             console.log('📵 Offline - skipping sync');
             return;
         }
+        
+        // Don't sync if quota exceeded
+        if (this.quotaExceeded) {
+            console.log('⚠️ Quota exceeded - skipping sync');
+            return;
+        }
+        
+        // Don't sync if already syncing
+        if (this.isSyncing) {
+            console.log('🔄 Already syncing - skipping');
+            return;
+        }
+        
+        // Throttle: Don't sync more than once per 10 seconds
+        const now = Date.now();
+        if (this.lastSyncAttempt && (now - this.lastSyncAttempt) < 10000) {
+            console.log('🔄 Sync throttled - too soon');
+            return;
+        }
+        
+        this.isSyncing = true;
+        this.lastSyncAttempt = now;
         
         console.log('🔄 Force syncing all data...');
         
@@ -147,6 +229,7 @@ class SyncManager {
                 window.Task.fromFirestore({ id: doc.id, ...doc.data() })
             );
             this.updateLocalTasks(tasks);
+            this.notifyTasksChanged(tasks);
             
             // Sync goals
             const goalsSnapshot = await this.db
@@ -158,6 +241,7 @@ class SyncManager {
                 window.Goal.fromFirestore({ id: doc.id, ...doc.data() })
             );
             this.updateLocalGoals(goals);
+            this.notifyGoalsChanged(goals);
             
             // Sync today's health data
             const today = window.DateTimeUtils.getTodayDateString();
@@ -168,10 +252,15 @@ class SyncManager {
             if (healthDoc.exists) {
                 const healthData = window.HealthData.fromFirestore({ date: healthDoc.id, ...healthDoc.data() });
                 this.updateLocalHealthData(healthData);
+                this.notifyHealthDataChanged(healthData);
             }
             
-            // Update device last_sync
-            await this.updateDeviceSync();
+            // Update device last_sync (with error handling)
+            try {
+                await this.updateDeviceSync();
+            } catch (e) {
+                console.warn('Device sync update failed (non-critical):', e);
+            }
             
             // Process offline queue if available
             if (window.offlineQueue) {
@@ -183,8 +272,14 @@ class SyncManager {
             // Update last sync time
             window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LAST_SYNC, window.DateTimeUtils.utcNowISO());
             
+            // Reset error count on success
+            this.syncErrorCount = 0;
+            
         } catch (error) {
             console.error('❌ Sync error:', error);
+            this.handleSyncError('Force sync', error);
+        } finally {
+            this.isSyncing = false;
         }
     }
     
@@ -201,7 +296,8 @@ class SyncManager {
                     last_sync: window.DateTimeUtils.utcNowISO()
                 });
         } catch (error) {
-            console.error('Error updating device sync:', error);
+            // Don't treat device update failure as critical
+            console.warn('Error updating device sync (non-critical):', error);
         }
     }
     
@@ -209,6 +305,17 @@ class SyncManager {
     onOnline() {
         console.log('🌐 Back online');
         this.isOnline = true;
+        
+        // Reset quota flag when coming back online (quota resets daily)
+        // User might have been offline overnight when quota reset
+        this.quotaExceeded = false;
+        this.syncErrorCount = 0;
+        
+        // Restart listeners
+        this.listenToTasks();
+        this.listenToGoals();
+        this.listenToHealthData();
+        
         this.forceSyncAll();
         this.showToast('Back online! Syncing...', 'success');
         this.hideOfflineBanner();
@@ -294,6 +401,11 @@ class SyncManager {
             const count = window.offlineQueue.getQueueCount();
             counter.textContent = count > 0 ? ` - ${count} pending` : '';
         }
+    }
+    
+    // Check if sync is ready
+    isReady() {
+        return this.userId && this.db && !this.quotaExceeded;
     }
 }
 

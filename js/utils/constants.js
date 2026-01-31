@@ -1,7 +1,7 @@
-// SDAPWA v1.0.0 - Constants
+// SDAPWA v1.1.2 - Constants
 
 // App Information
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.2';
 const APP_NAME = 'SimplyDone';
 
 // Firebase Collection Names
@@ -90,10 +90,11 @@ const NATURE_SOUNDS = {
     WHITE_NOISE: { label: 'White Noise', file: 'assets/sounds/whitenoise.mp3' }
 };
 
-// Sync Settings
+// Sync Settings - v1.1.2: Reduced frequency to prevent quota issues
 const SYNC_SETTINGS = {
-    INTERVAL_MS: 30000,  // 30 seconds
-    RETRY_DELAY_MS: 5000 // 5 seconds
+    INTERVAL_MS: 60000,  // 60 seconds (was 30, reduced to prevent quota issues)
+    RETRY_DELAY_MS: 10000, // 10 seconds (was 5)
+    DEBOUNCE_MS: 2000 // New: Debounce writes
 };
 
 // Geofence Settings
@@ -190,7 +191,9 @@ const ERROR_MESSAGES = {
     HEALTH_UPDATE_FAILED: 'Failed to update health data. Please try again.',
     LOCATION_PERMISSION_DENIED: 'Location permission denied.',
     NOTIFICATION_PERMISSION_DENIED: 'Notification permission denied.',
-    NETWORK_ERROR: 'Network error. Please check your connection.'
+    NETWORK_ERROR: 'Network error. Please check your connection.',
+    QUOTA_EXCEEDED: 'Firebase quota exceeded. Data saved locally, will sync later.',
+    SYNC_NOT_READY: 'Sync initializing, please wait...'
 };
 
 // Success Messages
