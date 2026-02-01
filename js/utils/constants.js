@@ -1,7 +1,7 @@
-// SDAPWA v1.2.0 - Constants
+// SDAPWA v1.3.0 - Constants
 
 // App Information
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const APP_NAME = 'SimplyDone';
 
 // Firebase Collection Names
@@ -91,15 +91,21 @@ const RAINY_DAY_LABELS = [
     { id: 'spiritual', label: 'Spiritual', icon: '🙏' }
 ];
 
-// Nature Sounds
-const NATURE_SOUNDS = {
-    NONE: { label: 'None', file: null },
-    RAIN: { label: 'Rain', file: 'assets/sounds/rain.mp3' },
-    OCEAN: { label: 'Ocean', file: 'assets/sounds/ocean.mp3' },
-    FOREST: { label: 'Forest', file: 'assets/sounds/forest.mp3' },
-    STREAM: { label: 'Stream', file: 'assets/sounds/stream.mp3' },
-    WHITE_NOISE: { label: 'White Noise', file: 'assets/sounds/whitenoise.mp3' }
+// Nature Sounds and Binaural Beats (v1.3.0: Uses Web Audio API)
+const MEDITATION_SOUNDS = {
+    NONE: { id: 'none', label: 'None', category: 'none' },
+    RAIN: { id: 'rain', label: 'Rain', category: 'nature' },
+    OCEAN: { id: 'ocean', label: 'Ocean Waves', category: 'nature' },
+    FOREST: { id: 'forest', label: 'Forest', category: 'nature' },
+    STREAM: { id: 'stream', label: 'Stream', category: 'nature' },
+    WHITE_NOISE: { id: 'whitenoise', label: 'White Noise', category: 'nature' },
+    ALPHA: { id: 'alpha', label: 'Alpha (Relaxation)', category: 'binaural' },
+    THETA: { id: 'theta', label: 'Theta (Deep Meditation)', category: 'binaural' },
+    BETA: { id: 'beta', label: 'Beta (Focus)', category: 'binaural' }
 };
+
+// Legacy - keep for backwards compatibility
+const NATURE_SOUNDS = MEDITATION_SOUNDS;
 
 // Sync Settings - v1.1.2: Reduced frequency to prevent quota issues
 const SYNC_SETTINGS = {
@@ -108,10 +114,15 @@ const SYNC_SETTINGS = {
     DEBOUNCE_MS: 2000 // New: Debounce writes
 };
 
-// Geofence Settings
+// Geofence Settings (v1.3.0: Changed to feet)
 const GEOFENCE_SETTINGS = {
-    DEFAULT_RADIUS_METERS: 100,
-    CHECK_INTERVAL_MS: 30000  // 30 seconds
+    DEFAULT_RADIUS_FEET: 300,  // Default radius in feet
+    MIN_RADIUS_FEET: 100,
+    MAX_RADIUS_FEET: 2000,
+    CHECK_INTERVAL_MS: 30000,  // 30 seconds
+    // Conversion helpers
+    FEET_TO_METERS: 0.3048,
+    METERS_TO_FEET: 3.28084
 };
 
 // Notification Settings
@@ -132,7 +143,10 @@ const STORAGE_KEYS = {
     SETTINGS: 'settings',
     LAST_SYNC: 'last_sync',
     CURRENT_TAB: 'current_tab',
-    BMDE_EXPANDED: 'bmde_expanded'
+    BMDE_EXPANDED: 'bmde_expanded',
+    WORKDAY_END_TIME: 'workday_end_time',  // v1.3.0: User's workday end time (HH:MM)
+    TASK_ORDER: 'task_order',  // v1.3.0: Custom task order for drag/drop
+    LOCATION_TRIGGERED_TASKS: 'location_triggered_tasks'  // v1.3.0: Tasks triggered by location arrival
 };
 
 // Health Data Source Types
@@ -238,6 +252,7 @@ window.CONSTANTS = {
     CHALLENGE_DURATIONS,
     RAINY_DAY_LABELS,
     NATURE_SOUNDS,
+    MEDITATION_SOUNDS,
     SYNC_SETTINGS,
     GEOFENCE_SETTINGS,
     NOTIFICATION_SETTINGS,
@@ -252,4 +267,4 @@ window.CONSTANTS = {
     SUCCESS_MESSAGES
 };
 
-console.log('✓ Constants loaded');
+console.log('✓ Constants loaded (v1.3.0)');

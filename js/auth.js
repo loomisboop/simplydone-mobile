@@ -1,11 +1,26 @@
-// SDAPWA v1.0.0 - Authentication
+// SDAPWA v1.3.0 - Authentication (iOS PWA compatible)
 
 const Auth = {
     currentUser: null,
     
+    // Detect if running as iOS PWA (standalone mode)
+    isIOSPWA() {
+        return (window.navigator.standalone === true) || 
+               (window.matchMedia('(display-mode: standalone)').matches && /iPhone|iPad|iPod/.test(navigator.userAgent));
+    },
+    
     // Initialize auth state listener
     init() {
         console.log('🔐 Initializing authentication...');
+        
+        // Check for redirect result first (for iOS PWA)
+        window.auth.getRedirectResult().then((result) => {
+            if (result.user) {
+                console.log('✓ Redirect sign-in successful');
+            }
+        }).catch((error) => {
+            console.error('Redirect result error:', error);
+        });
         
         window.auth.onAuthStateChanged((user) => {
             if (user) {
@@ -31,22 +46,32 @@ const Auth = {
         });
     },
     
-    // Sign in with Google
+    // Sign in with Google (auto-detect best method)
     async signInWithGoogle() {
         try {
             console.log('🔐 Starting Google Sign-In...');
             
-            const result = await window.auth.signInWithPopup(window.googleProvider);
-            const user = result.user;
-            
-            console.log('✓ Sign-in successful');
-            console.log('  User:', user.email);
-            console.log('  UID:', user.uid);
-            
-            // Show success toast
-            this.showToast(window.CONSTANTS.SUCCESS_MESSAGES.SIGNED_IN, 'success');
-            
-            return user;
+            // Use redirect for iOS PWA, popup for everything else
+            if (this.isIOSPWA()) {
+                console.log('📱 iOS PWA detected - using redirect method');
+                await window.auth.signInWithRedirect(window.googleProvider);
+                // Page will redirect, so no code after this runs
+                return null;
+            } else {
+                // Use popup for desktop and non-PWA mobile
+                console.log('💻 Using popup method');
+                const result = await window.auth.signInWithPopup(window.googleProvider);
+                const user = result.user;
+                
+                console.log('✓ Sign-in successful');
+                console.log('  User:', user.email);
+                console.log('  UID:', user.uid);
+                
+                // Show success toast
+                this.showToast(window.CONSTANTS.SUCCESS_MESSAGES.SIGNED_IN, 'success');
+                
+                return user;
+            }
         } catch (error) {
             console.error('❌ Sign-in failed:', error);
             
@@ -57,6 +82,15 @@ const Auth = {
                 message = 'Sign-in cancelled';
             } else if (error.code === 'auth/popup-blocked') {
                 message = 'Popup blocked. Please allow popups for this site.';
+            } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
+                // Fallback to redirect if popup fails
+                console.log('Popup not supported, trying redirect...');
+                try {
+                    await window.auth.signInWithRedirect(window.googleProvider);
+                    return null;
+                } catch (redirectError) {
+                    message = 'Sign-in not available in this browser mode.';
+                }
             }
             
             this.showToast(message, 'error');

@@ -1173,3 +1173,479 @@
         padding: var(--spacing-m) var(--spacing-l);
     }
 }
+
+/* ============================================================================
+   v1.3.0 - Goals Tiles Row
+   ============================================================================ */
+
+.goals-tiles-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.goal-tile {
+    flex: 1;
+    min-width: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 12px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.goal-tile:active {
+    transform: scale(0.98);
+}
+
+.goal-tile-empty {
+    background: #f5f5f5;
+    color: #757575;
+    border: 2px dashed #ccc;
+    text-align: center;
+    min-width: 120px;
+}
+
+.goal-tile-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.goal-tile-name {
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 8px;
+}
+
+.goal-tile-hint {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.goal-tile-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.goal-tile-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.goal-tile-fill {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.goal-tile-text {
+    font-size: 11px;
+    opacity: 0.9;
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   v1.3.0 - Drag and Drop
+   ============================================================================ */
+
+.drag-handle {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ccc;
+    font-size: 14px;
+    cursor: grab;
+    padding: 8px 4px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.task-card {
+    position: relative;
+    padding-left: 24px;
+}
+
+.task-card.dragging {
+    opacity: 0.5;
+    background: #e3f2fd;
+}
+
+.task-card.drag-over {
+    border-top: 3px solid #2196F3;
+}
+
+.task-list-sortable {
+    min-height: 50px;
+}
+
+/* ============================================================================
+   v1.3.0 - Task Details Modal
+   ============================================================================ */
+
+.task-details-modal {
+    max-width: 400px;
+}
+
+.task-details-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #212121;
+    margin-bottom: 12px;
+}
+
+.task-details-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+}
+
+.badge-type {
+    background: #607D8B;
+}
+
+.task-details-section {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row-notes {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    color: #757575;
+    font-size: 13px;
+}
+
+.detail-value {
+    color: #212121;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: right;
+}
+
+.detail-row-notes .detail-value {
+    text-align: left;
+    font-weight: normal;
+}
+
+/* ============================================================================
+   v1.3.0 - Park Menu Modal
+   ============================================================================ */
+
+.park-menu-modal {
+    max-width: 320px;
+}
+
+.park-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.park-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.park-option:active {
+    transform: scale(0.98);
+    background: #e0e0e0;
+}
+
+.park-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.park-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.park-desc {
+    font-size: 12px;
+    color: #757575;
+    margin-top: 4px;
+}
+
+/* ============================================================================
+   v1.3.0 - Task Options Modal
+   ============================================================================ */
+
+.task-options-modal {
+    max-width: 300px;
+}
+
+.task-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.task-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #212121;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.task-option:active {
+    background: #e0e0e0;
+}
+
+.task-option-danger {
+    color: #f44336;
+}
+
+/* ============================================================================
+   v1.3.0 - Edit Task Modal
+   ============================================================================ */
+
+.edit-task-modal {
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.edit-task-modal .form-group {
+    margin-bottom: 16px;
+}
+
+.edit-task-modal input,
+.edit-task-modal select,
+.edit-task-modal textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+/* ============================================================================
+   v1.3.0 - Mindfulness Enhancements
+   ============================================================================ */
+
+.sound-hint {
+    font-size: 12px;
+    color: #757575;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+.sound-selector select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+}
+
+/* ============================================================================
+   v1.3.0 - Settings Enhancements
+   ============================================================================ */
+
+.workday-display {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.workday-display span {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1976D2;
+}
+
+.settings-item-desc {
+    font-size: 12px;
+    color: #757575;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+/* ============================================================================
+   v1.3.0 - Address Autocomplete
+   ============================================================================ */
+
+.address-suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:active {
+    background: #e3f2fd;
+}
+
+.form-group {
+    position: relative;
+}
+
+/* ============================================================================
+   v1.3.0 - BMDE Tab Styles
+   ============================================================================ */
+
+.addtask-tabs {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px;
+    gap: 4px;
+}
+
+.addtask-tab {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   v1.3.0 - Task List Enhancements
+   ============================================================================ */
+
+.tasklist-card {
+    background: white;
+    border-radius: 8px;
+    margin: 8px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.tasklist-card.completed {
+    opacity: 0.6;
+}
+
+.tasklist-card-main {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.tasklist-card-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.tasklist-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tasklist-card-name {
+    font-weight: 500;
+    color: #212121;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tasklist-card-time {
+    font-size: 12px;
+    color: #757575;
+    margin-top: 2px;
+}
+
+.tasklist-card-check {
+    width: 24px;
+    height: 24px;
+    background: #4CAF50;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.tasklist-group-header {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #757575;
+    text-transform: uppercase;
+    background: #fafafa;
+}

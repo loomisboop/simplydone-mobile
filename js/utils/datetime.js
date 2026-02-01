@@ -325,6 +325,32 @@ function utcToLocalDateTime(utcISO) {
            pad(date.getMinutes());
 }
 
+// Format for datetime-local input (YYYY-MM-DDTHH:MM)
+function formatForInput(date) {
+    if (!date) return '';
+    if (typeof date === 'string') {
+        date = parseISO(date);
+    }
+    if (!date) return '';
+    
+    const pad = n => String(n).padStart(2, '0');
+    return date.getFullYear() + '-' + 
+           pad(date.getMonth() + 1) + '-' + 
+           pad(date.getDate()) + 'T' + 
+           pad(date.getHours()) + ':' + 
+           pad(date.getMinutes());
+}
+
+// Format full date and time for display
+function formatDateTime(date) {
+    if (!date) return '';
+    if (typeof date === 'string') {
+        date = parseISO(date);
+    }
+    if (!date) return '';
+    return formatLocalDateTime(date);
+}
+
 // Export all functions
 window.DateTimeUtils = {
     utcNowISO,
@@ -332,6 +358,8 @@ window.DateTimeUtils = {
     formatLocalDateTime,
     formatLocalDate,
     formatTime,
+    formatDateTime,
+    formatForInput,
     getDateString,
     getTodayDateString,
     isToday,
@@ -353,4 +381,4 @@ window.DateTimeUtils = {
     utcToLocalDateTime
 };
 
-console.log('✓ DateTimeUtils loaded');
+console.log('✓ DateTimeUtils loaded (v1.3.0)');

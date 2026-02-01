@@ -1,4 +1,4 @@
-// SDAPWA v1.0.0 - Notification Manager Service
+// SDAPWA v1.3.0 - Notification Manager Service (with audio integration)
 
 const NotificationManager = {
     permission: 'default',
@@ -14,10 +14,10 @@ const NotificationManager = {
         }
         
         this.permission = Notification.permission;
-        console.log(`🔔 Current permission: ${this.permission}`);
+        console.log('🔔 Current permission: ' + this.permission);
         
         return true;
-    }
+    },
     
     // Request permission
     async requestPermission() {
@@ -53,19 +53,29 @@ const NotificationManager = {
             console.error('Error requesting notification permission:', error);
             return false;
         }
-    }
+    },
     
-    // Show notification
+    // Show notification (v1.3.0: with audio)
     show(title, body, options = {}) {
+        // Play notification sound
+        if (window.AudioSystem && options.playSound !== false) {
+            window.AudioSystem.init();
+            window.AudioSystem.playNotificationChime(0.5);
+        }
+        
         if (this.permission !== 'granted') {
             console.log('Cannot show notification - permission not granted');
+            // Still show in-app toast
+            if (window.App && window.App.showToast) {
+                window.App.showToast(body, 'info');
+            }
             return null;
         }
         
         const defaultOptions = {
             body: body,
-            icon: '/assets/icons/icon-192.png',
-            badge: '/assets/icons/icon-96.png',
+            icon: 'assets/icons/icon-192.png',
+            badge: 'assets/icons/icon-96.png',
             vibrate: [200, 100, 200],
             requireInteraction: false,
             ...options
@@ -85,29 +95,31 @@ const NotificationManager = {
                 }
             };
             
-            console.log(`🔔 Notification shown: ${title}`);
+            console.log('🔔 Notification shown: ' + title);
             return notification;
             
         } catch (error) {
             console.error('Error showing notification:', error);
             return null;
         }
-    }
+    },
     
     // Handle notification click
     _handleNotificationClick(tag) {
         // Tag format: "task-{id}" or "goal-{id}" or screen name
         if (tag.startsWith('task-')) {
-            // Navigate to task list
-            window.App.showScreen(window.CONSTANTS.SCREENS.TASK_LIST);
+            // Navigate to dashboard (tasks)
+            window.App.showScreen(window.CONSTANTS.SCREENS.DASHBOARD);
         } else if (tag.startsWith('goal-')) {
             // Navigate to goals
             window.App.showScreen(window.CONSTANTS.SCREENS.GOALS_DETAIL);
         } else if (tag === 'health') {
             // Navigate to mindfulness/health tab
             window.App.showScreen(window.CONSTANTS.SCREENS.MINDFULNESS);
+        } else if (tag === 'bmde-reminder') {
+            window.App.showScreen(window.CONSTANTS.SCREENS.DASHBOARD);
         }
-    }
+    },
     
     // Schedule task reminder
     scheduleTaskReminder(task) {
@@ -123,29 +135,37 @@ const NotificationManager = {
             setTimeout(() => {
                 this.show(
                     'Task Starting',
-                    `Time to: ${task.name}`,
+                    'Time to: ' + task.name,
                     {
-                        tag: `task-${task.id}`,
+                        tag: 'task-' + task.id,
                         requireInteraction: true
                     }
                 );
             }, delay);
             
-            console.log(`🔔 Scheduled notification for task: ${task.name}`);
+            console.log('🔔 Scheduled notification for task: ' + task.name);
         }
-    }
+    },
     
-    // Show location arrival notification
+    // Show location arrival notification (v1.3.0: with location chime)
     showLocationArrival(task) {
+        // Play location-specific chime
+        if (window.AudioSystem) {
+            window.AudioSystem.init();
+            window.AudioSystem.playLocationArrivalChime(0.6);
+        }
+        
         this.show(
-            'Location Reached',
-            `You're near: ${task.name}`,
+            '📍 Location Task',
+            'You\'re near: ' + task.name,
             {
-                tag: `task-${task.id}`,
-                icon: '/assets/icons/icon-192.png'
+                tag: 'task-' + task.id,
+                icon: 'assets/icons/icon-192.png',
+                requireInteraction: true,
+                playSound: false // Already played location chime
             }
         );
-    }
+    },
     
     // Show "Before My Day Ends" reminder
     showBeforeDayEndsReminder(tasks) {
@@ -155,98 +175,81 @@ const NotificationManager = {
         const taskNames = tasks.slice(0, 3).map(t => t.name).join(', ');
         
         this.show(
-            'Before Day Ends Reminder',
-            `${count} task${count !== 1 ? 's' : ''} pending: ${taskNames}${count > 3 ? '...' : ''}`,
+            '⏰ Before Day Ends Reminder',
+            count + ' task' + (count !== 1 ? 's' : '') + ' pending: ' + taskNames + (count > 3 ? '...' : ''),
             {
                 tag: 'bmde-reminder',
                 requireInteraction: true
             }
         );
-    }
+    },
     
-    // Show daily step goal reminder
-    showStepGoalReminder(currentSteps, goalSteps) {
-        const percentage = Math.round((currentSteps / goalSteps) * 100);
+    // Show "Do These 3 Now" notification when tasks become active
+    showDoThese3Now(tasks) {
+        if (tasks.length === 0) return;
+        
+        const taskList = tasks.map(t => '• ' + t.name).join('\n');
         
         this.show(
-            'Step Goal Progress',
-            `You're at ${percentage}% of your daily step goal (${currentSteps.toLocaleString()}/${goalSteps.toLocaleString()})`,
+            '✓ Do These 3 Now',
+            tasks.length + ' task' + (tasks.length > 1 ? 's' : '') + ' ready:\n' + taskList,
             {
-                tag: 'health-steps',
-                icon: '/assets/icons/icon-192.png'
-            }
-        );
-    }
-    
-    // Show mindfulness reminder
-    showMindfulnessReminder() {
-        this.show(
-            'Time for Mindfulness',
-            'Take a few minutes to breathe and relax',
-            {
-                tag: 'health',
-                icon: '/assets/icons/icon-192.png'
-            }
-        );
-    }
-    
-    // Show sync success (first time only)
-    showSyncSuccess() {
-        this.show(
-            'SimplyDone',
-            'Successfully synced with your PC! ✓',
-            {
-                tag: 'sync-success',
+                tag: 'dt3n',
                 requireInteraction: false
             }
         );
-    }
+    },
     
-    // Show sync error
-    showSyncError() {
+    // Show goal step reminder
+    showGoalStepDue(goal, step) {
         this.show(
-            'Sync Error',
-            'Unable to sync data. Will retry when online.',
+            '🎯 Goal Step Due',
+            goal.name_one_word + ': ' + step.description,
             {
-                tag: 'sync-error',
-                requireInteraction: false
+                tag: 'goal-' + goal.id,
+                requireInteraction: true
             }
         );
-    }
+    },
     
-    // Show achievement notification
-    showAchievement(title, message) {
-        this.show(
-            `🎉 ${title}`,
-            message,
-            {
-                tag: 'achievement',
-                vibrate: [200, 100, 200, 100, 200],
-                requireInteraction: false
-            }
-        );
-    }
+    // Schedule BMDE reminder (1 hour before workday ends)
+    scheduleBMDEReminder() {
+        const workdayEnd = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.WORKDAY_END_TIME, '17:00');
+        const [hours, minutes] = workdayEnd.split(':').map(Number);
+        
+        const now = new Date();
+        const reminderTime = new Date();
+        reminderTime.setHours(hours - 1, minutes, 0, 0); // 1 hour before
+        
+        if (reminderTime > now) {
+            const delay = reminderTime - now;
+            setTimeout(() => {
+                const tasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, [])
+                    .map(t => window.Task.fromFirestore(t))
+                    .filter(t => t.before_day_ends && !t.completed_at && !t.deleted);
+                
+                if (tasks.length > 0) {
+                    this.showBeforeDayEndsReminder(tasks);
+                }
+            }, delay);
+            
+            console.log('🔔 Scheduled BMDE reminder for ' + reminderTime.toLocaleTimeString());
+        }
+    },
     
-    // Check if permission is granted
-    isGranted() {
-        return this.permission === 'granted';
-    }
+    // Check if we can send notifications
+    canNotify() {
+        return 'Notification' in window && this.permission === 'granted';
+    },
     
-    // Check if permission is denied
-    isDenied() {
-        return this.permission === 'denied';
-    }
-    
-    // Check if permission can be requested
-    canRequest() {
-        return this.permission === 'default';
+    // Get permission status for display
+    getStatus() {
+        if (!('Notification' in window)) return 'Not supported';
+        if (this.permission === 'granted') return '✓ Enabled';
+        if (this.permission === 'denied') return '✗ Denied';
+        return 'Not requested';
     }
 };
 
-// Initialize
-NotificationManager.init();
-
-// Export
 window.NotificationManager = NotificationManager;
-
-console.log('✓ NotificationManager loaded');
+console.log('✓ NotificationManager loaded (v1.3.0)');
