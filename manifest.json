@@ -2,7 +2,7 @@
   "name": "SimplyDone",
   "short_name": "SimplyDone",
   "description": "ADHD-friendly task management with bilateral sync",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#1976D2",
