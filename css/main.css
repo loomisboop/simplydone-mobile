@@ -1,0 +1,558 @@
+/* SDAPWA v1.0.0 - Main Styles */
+
+/* ============================================================================
+   CSS Variables (Design System)
+   ========================================================================= */
+
+:root {
+    /* Primary Colors */
+    --color-primary: #1976D2;
+    --color-primary-light: #BBDEFB;
+    --color-primary-lighter: #E3F2FD;
+    
+    /* Secondary Colors */
+    --color-secondary: #4CAF50;
+    --color-orange: #FF9800;
+    
+    /* Neutrals */
+    --color-text-primary: #212121;
+    --color-text-secondary: #757575;
+    --color-border: #E0E0E0;
+    --color-background: #F5F5F5;
+    --color-white: #FFFFFF;
+    
+    /* Status Colors */
+    --color-success: #4CAF50;
+    --color-warning: #FFA726;
+    --color-error: #EF5350;
+    --color-info: #2196F3;
+    
+    /* Priority Colors (SDPC parity) */
+    --priority-low: #90CAF9;
+    --priority-normal: #66BB6A;
+    --priority-high: #FFA726;
+    --priority-urgent: #EF5350;
+    
+    /* Duration Colors (SDPC parity) */
+    --duration-7: #009900;
+    --duration-15: #FFCC00;
+    --duration-35: #CC0000;
+    --duration-any: #808080;
+    
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-s: 8px;
+    --spacing-m: 12px;
+    --spacing-l: 16px;
+    --spacing-xl: 24px;
+    --spacing-xxl: 32px;
+    
+    /* Border Radius */
+    --radius-small: 4px;
+    --radius-medium: 8px;
+    --radius-large: 16px;
+    
+    /* Shadows */
+    --shadow-light: 0 1px 3px rgba(0,0,0,0.12);
+    --shadow-medium: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-heavy: 0 4px 8px rgba(0,0,0,0.15);
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-size-micro: 10px;
+    --font-size-tiny: 12px;
+    --font-size-small: 14px;
+    --font-size-body: 16px;
+    --font-size-h3: 18px;
+    --font-size-h2: 20px;
+    --font-size-h1: 22px;
+    --font-size-hero: 96px;
+    
+    /* Transitions */
+    --transition-fast: 150ms ease-in-out;
+    --transition-medium: 300ms ease-in-out;
+    --transition-slow: 500ms ease-in-out;
+    
+    /* Layout */
+    --bottom-nav-height: 60px;
+    --top-bar-height: 56px;
+}
+
+/* ============================================================================
+   Reset & Base
+   ========================================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    background-color: var(--color-white);
+    overflow-x: hidden;
+}
+
+/* ============================================================================
+   Typography
+   ========================================================================= */
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: var(--spacing-m);
+}
+
+h1 { font-size: var(--font-size-h1); }
+h2 { font-size: var(--font-size-h2); }
+h3 { font-size: var(--font-size-h3); }
+
+p {
+    margin-bottom: var(--spacing-m);
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================================================
+   Layout
+   ========================================================================= */
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+.main-content {
+    flex: 1;
+    padding-top: var(--top-bar-height);
+    padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-l));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================================
+   Buttons
+   ========================================================================= */
+
+button {
+    font-family: var(--font-family);
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-medium);
+    padding: var(--spacing-m) var(--spacing-xl);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+    min-width: 44px;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+}
+
+.btn-primary:hover {
+    background-color: #1565C0;
+}
+
+.btn-secondary {
+    background-color: var(--color-secondary);
+    color: var(--color-white);
+}
+
+.btn-secondary:hover {
+    background-color: #388E3C;
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.btn-outline:hover {
+    background-color: var(--color-primary-lighter);
+}
+
+.btn-danger {
+    background-color: var(--color-error);
+    color: var(--color-white);
+}
+
+.btn-danger:hover {
+    background-color: #D32F2F;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================================================
+   Form Elements
+   ========================================================================= */
+
+input,
+textarea,
+select {
+    font-family: var(--font-family);
+    font-size: var(--font-size-body);
+    padding: var(--spacing-m);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    width: 100%;
+    transition: border-color var(--transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+label {
+    display: block;
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-l);
+}
+
+.form-error {
+    color: var(--color-error);
+    font-size: var(--font-size-small);
+    margin-top: var(--spacing-xs);
+}
+
+/* ============================================================================
+   Loading Screen
+   ========================================================================= */
+
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-white);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-screen p {
+    margin-top: var(--spacing-l);
+    color: var(--color-text-secondary);
+}
+
+/* ============================================================================
+   Offline Banner
+   ========================================================================= */
+
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--color-text-secondary);
+    color: var(--color-white);
+    padding: var(--spacing-s) var(--spacing-l);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--font-size-small);
+    z-index: 1000;
+}
+
+/* ============================================================================
+   Toast Notifications
+   ========================================================================= */
+
+.toast-container {
+    position: fixed;
+    bottom: calc(var(--bottom-nav-height) + var(--spacing-l));
+    left: var(--spacing-l);
+    right: var(--spacing-l);
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.toast {
+    background-color: var(--color-text-primary);
+    color: var(--color-white);
+    padding: var(--spacing-m) var(--spacing-l);
+    border-radius: var(--radius-medium);
+    margin-bottom: var(--spacing-s);
+    box-shadow: var(--shadow-heavy);
+    animation: slideUp 0.3s ease-out;
+    pointer-events: auto;
+}
+
+.toast.success {
+    background-color: var(--color-success);
+}
+
+.toast.error {
+    background-color: var(--color-error);
+}
+
+.toast.warning {
+    background-color: var(--color-warning);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ============================================================================
+   Bottom Navigation
+   ========================================================================= */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--bottom-nav-height);
+    background-color: var(--color-white);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+}
+
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-s);
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+    min-width: 0;
+}
+
+.nav-item.active {
+    color: var(--color-primary);
+}
+
+.nav-item.nav-add {
+    position: relative;
+}
+
+.nav-item.nav-add .nav-icon {
+    font-size: 32px;
+    background-color: var(--color-secondary);
+    color: var(--color-white);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-medium);
+    position: relative;
+    top: -8px;
+}
+
+.nav-icon {
+    font-size: 24px;
+    margin-bottom: var(--spacing-xs);
+}
+
+.nav-label {
+    font-size: var(--font-size-micro);
+}
+
+/* ============================================================================
+   Utility Classes
+   ========================================================================= */
+
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-secondary {
+    color: var(--color-text-secondary);
+}
+
+.mt-0 { margin-top: 0; }
+.mt-s { margin-top: var(--spacing-s); }
+.mt-m { margin-top: var(--spacing-m); }
+.mt-l { margin-top: var(--spacing-l); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-s { margin-bottom: var(--spacing-s); }
+.mb-m { margin-bottom: var(--spacing-m); }
+.mb-l { margin-bottom: var(--spacing-l); }
+
+.p-l { padding: var(--spacing-l); }
+.p-m { padding: var(--spacing-m); }
+
+/* ============================================================================
+   Responsive
+   ========================================================================= */
+
+@media (min-width: 768px) {
+    .main-content {
+        max-width: 768px;
+        margin: 0 auto;
+    }
+}
+
+/* ============================================================================
+   Touch Optimizations
+   ========================================================================= */
+
+/* Prevent text selection on buttons/interactive elements */
+button,
+.nav-item,
+.task-card,
+.goal-card {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Smooth scrolling */
+.main-content,
+.thumbwheel {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Remove tap highlight */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================================
+   iOS PWA Fixes (v1.2.0)
+   ========================================================================= */
+
+/* Prevent iOS text size adjustment */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Fix iOS input zoom */
+input, select, textarea {
+    font-size: 16px !important;
+}
+
+/* iOS standalone mode styles */
+@media (display-mode: standalone) {
+    body {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    /* Allow text selection in inputs */
+    input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+}
+
+/* Prevent iOS rubber-band scrolling on fixed elements */
+.bottom-nav,
+.offline-banner {
+    position: fixed;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* iOS momentum scrolling */
+.main-content,
+.rainyday-content,
+.tasklist-content,
+.thumbwheel-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+/* Bottom nav adjustment for 6 items */
+.bottom-nav {
+    padding: 0 4px;
+}
+
+.nav-item {
+    padding: var(--spacing-xs) var(--spacing-xs);
+}
+
+.nav-label {
+    font-size: 9px;
+    white-space: nowrap;
+}
+
+/* Fix for iOS 15+ safe area */
+@supports (padding: max(0px)) {
+    .bottom-nav {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+}
