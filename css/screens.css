@@ -1649,3 +1649,155 @@
     text-transform: uppercase;
     background: #fafafa;
 }
+
+/* ============================================================================
+   v1.3.0 FIX - Tab Content Visibility
+   ============================================================================ */
+
+.addtask-tab-content {
+    display: none;
+}
+
+.addtask-tab-content.active {
+    display: block;
+}
+
+/* ============================================================================
+   v1.3.0 FIX - Duration Pills Styling
+   ============================================================================ */
+
+.duration-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.duration-pill {
+    padding: 10px 16px;
+    border: 2px solid #E0E0E0;
+    border-radius: 20px;
+    background: white;
+    color: #757575;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.duration-pill:hover {
+    border-color: #1976D2;
+    color: #1976D2;
+}
+
+.duration-pill.active {
+    background: #1976D2;
+    border-color: #1976D2;
+    color: white;
+}
+
+/* ============================================================================
+   v1.3.0 FIX - Addtask Tab Styling
+   ============================================================================ */
+
+.addtask-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0 16px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.addtask-tab {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 20px;
+    background: #f5f5f5;
+    color: #757575;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.addtask-tab:hover {
+    background: #e0e0e0;
+}
+
+.addtask-tab.active {
+    background: #1976D2;
+    color: white;
+}
+
+.addtask-form {
+    padding: 16px 0;
+}
+
+.addtask-form .form-group {
+    margin-bottom: 20px;
+}
+
+.addtask-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #212121;
+}
+
+.addtask-form input[type="text"],
+.addtask-form input[type="number"],
+.addtask-form input[type="datetime-local"],
+.addtask-form select,
+.addtask-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+}
+
+.addtask-form input:focus,
+.addtask-form select:focus,
+.addtask-form textarea:focus {
+    outline: none;
+    border-color: #1976D2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.btn-block {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Label pills for Rainy Day */
+.label-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.label-pill {
+    padding: 8px 14px;
+    border: 2px solid #E0E0E0;
+    border-radius: 20px;
+    background: white;
+    color: #757575;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.label-pill:hover {
+    border-color: #9C27B0;
+    color: #9C27B0;
+}
+
+.label-pill.active {
+    background: #9C27B0;
+    border-color: #9C27B0;
+    color: white;
+}
