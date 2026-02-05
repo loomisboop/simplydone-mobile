@@ -1,7 +1,7 @@
 // SDAPWA v1.3.0 - Constants
 
 // App Information
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 const APP_NAME = 'SimplyDone';
 
 // Firebase Collection Names
@@ -173,6 +173,7 @@ const SCREENS = {
     MINDFULNESS: 'mindfulness',
     GOALS_DETAIL: 'goalsdetail',
     CHALLENGE_TIMER: 'challenge',
+    QUICK_CHALLENGE: 'quickchallenge',
     SETTINGS: 'settings'
 };
 

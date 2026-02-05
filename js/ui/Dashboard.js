@@ -16,6 +16,14 @@ const DashboardScreen = {
         container.innerHTML = `
             <div class="dashboard-screen">
                 <div id="goals-tiles-container" class="goals-tiles-row"></div>
+                
+                <div class="quick-challenge-launcher">
+                    <button class="qc-launch-btn" onclick="window.App.showScreen('quickchallenge')">
+                        <span class="qc-launch-icon">⏱️</span>
+                        <span class="qc-launch-text">Quick Challenge</span>
+                    </button>
+                </div>
+                
                 <div class="dashboard-section">
                     <div class="section-header"><h2 class="section-title">Do These 3 Now</h2></div>
                     <div id="do-these-3-now-container" class="task-list-sortable"></div>

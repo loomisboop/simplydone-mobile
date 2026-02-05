@@ -116,6 +116,12 @@ const App = {
                 }
                 break;
                 
+            case window.CONSTANTS.SCREENS.QUICK_CHALLENGE:
+                if (window.QuickChallengeScreen) {
+                    window.QuickChallengeScreen.render(mainContent);
+                }
+                break;
+                
             case window.CONSTANTS.SCREENS.SETTINGS:
                 if (window.SettingsScreen) {
                     window.SettingsScreen.render(mainContent);
