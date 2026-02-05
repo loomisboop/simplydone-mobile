@@ -1,9 +1,9 @@
-// SDAPWA v1.3.0 - Authentication (iOS PWA compatible)
+// SDAPWA v1.3.1 - Authentication (FIXED: correct method names)
 
 const Auth = {
     currentUser: null,
+    authStateListenerAdded: false,
     
-    // Detect if running as iOS PWA (standalone mode)
     isIOSPWA() {
         return (window.navigator.standalone === true) || 
                (window.matchMedia('(display-mode: standalone)').matches && /iPhone|iPad|iPod/.test(navigator.userAgent));
@@ -11,139 +11,106 @@ const Auth = {
     
     // Initialize auth state listener
     init() {
-        console.log('🔐 Initializing authentication...');
+        if (this.authStateListenerAdded) return;
+        this.authStateListenerAdded = true;
         
-        // Check for redirect result first (for iOS PWA)
+        // Handle redirect result for iOS PWA
         window.auth.getRedirectResult().then((result) => {
-            if (result.user) {
-                console.log('✓ Redirect sign-in successful');
+            if (result && result.user) {
+                console.log('📱 Redirect sign-in successful');
             }
         }).catch((error) => {
-            console.error('Redirect result error:', error);
+            console.error('Redirect error:', error);
         });
         
+        // Listen for auth state changes
         window.auth.onAuthStateChanged((user) => {
+            console.log('Auth state changed:', user ? user.email : 'signed out');
+            this.currentUser = user;
+            
             if (user) {
-                // User is signed in
-                this.currentUser = user;
-                console.log('✓ User authenticated:', user.uid);
-                console.log('  Email:', user.email);
-                console.log('  Name:', user.displayName);
-                
-                // Store user ID
-                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.USER_ID, user.uid);
-                
-                // Initialize app with user
                 this.onSignedIn(user);
             } else {
-                // User is signed out
-                this.currentUser = null;
-                console.log('User not authenticated');
-                
-                // Show sign-in screen
                 this.onSignedOut();
             }
         });
     },
     
-    // Sign in with Google (auto-detect best method)
-    async signInWithGoogle() {
+    // Sign in with Google
+    async signIn() {
         try {
-            console.log('🔐 Starting Google Sign-In...');
+            console.log('Starting Google sign-in...');
             
-            // Use redirect for iOS PWA, popup for everything else
+            // Check if iOS PWA - use redirect instead of popup
             if (this.isIOSPWA()) {
                 console.log('📱 iOS PWA detected - using redirect method');
                 await window.auth.signInWithRedirect(window.googleProvider);
                 // Page will redirect, so no code after this runs
                 return null;
             } else {
-                // Use popup for desktop and non-PWA mobile
-                console.log('💻 Using popup method');
+                // Use popup for desktop/browser
                 const result = await window.auth.signInWithPopup(window.googleProvider);
-                const user = result.user;
-                
-                console.log('✓ Sign-in successful');
-                console.log('  User:', user.email);
-                console.log('  UID:', user.uid);
-                
-                // Show success toast
-                this.showToast(window.CONSTANTS.SUCCESS_MESSAGES.SIGNED_IN, 'success');
-                
-                return user;
+                console.log('Sign-in successful:', result.user.email);
+                this.showToast('Signed in successfully! ✓', 'success');
+                return result.user;
             }
         } catch (error) {
-            console.error('❌ Sign-in failed:', error);
+            console.error('Sign-in error:', error);
             
             // Handle specific errors
-            let message = window.CONSTANTS.ERROR_MESSAGES.AUTH_FAILED;
-            
-            if (error.code === 'auth/popup-closed-by-user') {
-                message = 'Sign-in cancelled';
-            } else if (error.code === 'auth/popup-blocked') {
-                message = 'Popup blocked. Please allow popups for this site.';
-            } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
-                // Fallback to redirect if popup fails
-                console.log('Popup not supported, trying redirect...');
+            if (error.code === 'auth/popup-blocked') {
+                this.showToast('Popup blocked. Please allow popups.', 'error');
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                this.showToast('Sign-in cancelled', 'info');
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                // Ignore - this happens when multiple popups are requested
+            } else if (error.code === 'auth/network-request-failed') {
+                this.showToast('Network error. Please check your connection.', 'error');
+            } else if (error.code === 'auth/unauthorized-domain') {
+                // Try redirect method as fallback
+                console.log('Trying redirect method as fallback...');
                 try {
                     await window.auth.signInWithRedirect(window.googleProvider);
-                    return null;
                 } catch (redirectError) {
-                    message = 'Sign-in not available in this browser mode.';
+                    console.error('Redirect also failed:', redirectError);
+                    this.showToast('Sign-in failed. Please try again.', 'error');
                 }
+            } else {
+                this.showToast('Sign-in failed: ' + error.message, 'error');
             }
-            
-            this.showToast(message, 'error');
-            throw error;
+            return null;
         }
     },
     
     // Sign out
     async signOut() {
         try {
-            console.log('🔐 Signing out...');
-            
-            // Confirm with user
-            if (!confirm('Are you sure you want to sign out?')) {
-                return false;
-            }
-            
             // Stop sync
             if (window.syncManager) {
-                window.syncManager.stopSync();
+                window.syncManager.stopListening();
             }
             
-            // Clear local data
-            this.clearLocalData();
+            // Stop geofence monitor
+            if (window.geofenceMonitor) {
+                window.geofenceMonitor.stop();
+            }
             
-            // Sign out from Firebase
             await window.auth.signOut();
-            
-            console.log('✓ Signed out');
-            this.showToast(window.CONSTANTS.SUCCESS_MESSAGES.SIGNED_OUT);
-            
-            return true;
+            this.showToast('Signed out', 'info');
         } catch (error) {
-            console.error('❌ Sign-out failed:', error);
+            console.error('Sign-out error:', error);
             this.showToast('Sign-out failed', 'error');
-            throw error;
         }
     },
     
-    // Get current user
-    getCurrentUser() {
-        return this.currentUser || window.auth.currentUser;
-    },
-    
-    // Get user ID
+    // Get current user ID
     getUserId() {
-        const user = this.getCurrentUser();
-        return user ? user.uid : null;
+        return this.currentUser ? this.currentUser.uid : null;
     },
     
-    // Check if signed in
-    isSignedIn() {
-        return this.getCurrentUser() !== null;
+    // Get current user email
+    getUserEmail() {
+        return this.currentUser ? this.currentUser.email : null;
     },
     
     // Callback when user signs in
@@ -153,30 +120,45 @@ const Auth = {
         try {
             // Register device
             await this.registerDevice(user.uid);
+            console.log('✓ Device registered');
             
             // Initialize sync
-            if (window.SyncManager) {
+            if (window.SyncManager && window.db) {
+                console.log('Creating SyncManager...');
                 window.syncManager = new window.SyncManager(window.db, user.uid);
-                window.syncManager.startSync();
+                window.syncManager.startListening(); // FIXED: was startSync()
+                console.log('✓ SyncManager started');
+            } else {
+                console.warn('SyncManager or db not available');
             }
             
             // Initialize geofence monitor
             if (window.GeofenceMonitor) {
+                console.log('Creating GeofenceMonitor...');
                 window.geofenceMonitor = new window.GeofenceMonitor(user.uid);
                 window.geofenceMonitor.start();
+                console.log('✓ GeofenceMonitor started');
             }
             
             // Show dashboard
             if (window.App) {
                 window.App.showScreen(window.CONSTANTS.SCREENS.DASHBOARD);
+                console.log('✓ Dashboard shown');
             }
             
             // Hide loading screen
             this.hideLoadingScreen();
+            console.log('✓ App initialization complete');
             
         } catch (error) {
             console.error('Error initializing app after sign-in:', error);
-            this.showToast('Failed to initialize app', 'error');
+            console.error('Error details:', error.message, error.stack);
+            this.showToast('Failed to initialize app: ' + error.message, 'error');
+            // Still try to show dashboard even if initialization partially failed
+            if (window.App) {
+                window.App.showScreen(window.CONSTANTS.SCREENS.DASHBOARD);
+            }
+            this.hideLoadingScreen();
         }
     },
     
@@ -198,99 +180,62 @@ const Auth = {
         try {
             // Get or create device info
             let deviceId = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
-            let deviceInfo;
             
             if (!deviceId) {
-                // Create new device
-                deviceInfo = new window.DeviceInfo();
-                deviceId = deviceInfo.device_id;
-                
-                // Save device ID locally
+                deviceId = 'pwa-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                 window.Storage.set(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID, deviceId);
-                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.DEVICE_NAME, deviceInfo.device_name);
-                
-                console.log('✓ New device registered:', deviceId);
-            } else {
-                // Load existing device info
-                const deviceName = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_NAME);
-                deviceInfo = new window.DeviceInfo({
-                    device_id: deviceId,
-                    device_name: deviceName
-                });
-                
-                console.log('✓ Existing device loaded:', deviceId);
             }
             
-            // Update last_sync
-            deviceInfo.touch();
+            // Determine device name
+            const userAgent = navigator.userAgent;
+            let deviceName = 'PWA';
+            if (/iPhone/.test(userAgent)) deviceName = 'iPhone PWA';
+            else if (/iPad/.test(userAgent)) deviceName = 'iPad PWA';
+            else if (/Android/.test(userAgent)) deviceName = 'Android PWA';
+            else if (/Mac/.test(userAgent)) deviceName = 'Mac PWA';
+            else if (/Windows/.test(userAgent)) deviceName = 'Windows PWA';
             
-            // Save to Firestore
-            await window.db
-                .collection(`users/${userId}/devices`)
-                .doc(deviceId)
-                .set(deviceInfo.toFirestore());
+            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.DEVICE_NAME, deviceName);
             
-            console.log('✓ Device synced to Firestore');
+            // Register in Firestore
+            await window.db.collection('users').doc(userId).collection('devices').doc(deviceId).set({
+                device_id: deviceId,
+                device_name: deviceName,
+                platform: 'pwa',
+                created_at: window.DateTimeUtils.utcNowISO(),
+                last_sync: window.DateTimeUtils.utcNowISO(),
+                app_version: window.CONSTANTS.APP_VERSION
+            }, { merge: true });
             
-            return deviceInfo;
+            console.log('Device registered:', deviceId);
+            
         } catch (error) {
             console.error('Error registering device:', error);
-            // Don't throw - device registration failure shouldn't block sign-in
+            // Don't throw - device registration failure shouldn't block app
         }
     },
     
-    // Clear local data on sign out
-    clearLocalData() {
-        const keysToKeep = [
-            window.CONSTANTS.STORAGE_KEYS.DEVICE_ID,
-            window.CONSTANTS.STORAGE_KEYS.DEVICE_NAME
-        ];
-        
-        // Get all keys
-        const allKeys = window.Storage.keys();
-        
-        // Remove all except device info
-        allKeys.forEach(key => {
-            if (!keysToKeep.includes(key)) {
-                window.Storage.remove(key);
-            }
-        });
-        
-        console.log('✓ Local data cleared');
-    },
-    
-    // Hide loading screen
-    hideLoadingScreen() {
-        const loadingScreen = document.getElementById('loading-screen');
-        const appContainer = document.getElementById('app');
-        
-        if (loadingScreen) {
-            loadingScreen.style.display = 'none';
-        }
-        
-        if (appContainer) {
-            appContainer.style.display = 'flex';
-        }
-    },
-    
-    // Show toast notification
+    // Show toast message
     showToast(message, type = 'info') {
         if (window.App && window.App.showToast) {
             window.App.showToast(message, type);
         } else {
             console.log(`Toast (${type}): ${message}`);
         }
+    },
+    
+    // Show loading screen
+    showLoadingScreen() {
+        const loading = document.getElementById('loading-screen');
+        if (loading) loading.style.display = 'flex';
+    },
+    
+    // Hide loading screen
+    hideLoadingScreen() {
+        const loading = document.getElementById('loading-screen');
+        if (loading) loading.style.display = 'none';
     }
 };
 
-// Initialize auth when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => Auth.init());
-} else {
-    Auth.init();
-}
-
-// Export
 window.Auth = Auth;
-
-console.log('✓ Auth loaded');
+console.log('✓ Auth module loaded (v1.3.1 fixed)');
