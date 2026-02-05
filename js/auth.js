@@ -156,7 +156,7 @@ const Auth = {
             
             // Initialize sync
             if (window.SyncManager) {
-                window.syncManager = new window.SyncManager(user.uid);
+                window.syncManager = new window.SyncManager(window.db, user.uid);
                 window.syncManager.startSync();
             }
             
