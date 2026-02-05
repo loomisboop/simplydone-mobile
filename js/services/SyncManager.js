@@ -1,97 +1,115 @@
-// SDAPWA v1.3.1 - Sync Manager (FIXED: Don't overwrite local completions)
+// SDAPWA v1.1.2 - Sync Manager (FIXED with quota handling)
 
 class SyncManager {
-    constructor(db, userId) {
-        this.db = db;
+    constructor(userId) {
         this.userId = userId;
+        this.db = window.db;
         this.listeners = [];
+        this.syncInterval = null;
+        this.isOnline = navigator.onLine;
+        this.isSyncing = false;
+        this.quotaExceeded = false;
+        this.lastSyncAttempt = null;
+        this.syncErrorCount = 0;
+        
+        // Listen for online/offline events
+        window.addEventListener('online', () => this.onOnline());
+        window.addEventListener('offline', () => this.onOffline());
+        
+        console.log('🔄 SyncManager initialized for user:', userId);
+    }
+    
+    // Start real-time sync
+    startSync() {
+        console.log('🔄 Starting sync...');
+        
+        // Reset quota flag on fresh start
         this.quotaExceeded = false;
         this.syncErrorCount = 0;
-        this.maxSyncErrors = 5;
-        this.isSyncing = false;
-        this.lastSyncTime = null;
-        this.pendingLocalChanges = new Set(); // Track tasks being updated locally
+        
+        // Real-time listeners (immediate updates)
+        this.listenToTasks();
+        this.listenToGoals();
+        this.listenToHealthData();
+        
+        // Periodic sync (backup, every 60 seconds - increased from 30 to reduce quota usage)
+        this.syncInterval = setInterval(() => {
+            if (!this.quotaExceeded) {
+                this.forceSyncAll();
+            }
+        }, window.CONSTANTS.SYNC_SETTINGS.INTERVAL_MS);
+        
+        // Initial sync
+        this.forceSyncAll();
+        
+        console.log('✓ Sync started');
     }
     
-    // Start real-time listeners
-    startListening() {
-        console.log('🔄 Starting sync listeners...');
+    // Stop sync (on sign out)
+    stopSync() {
+        console.log('⏹️ Stopping sync...');
         
-        // Tasks listener
-        const tasksListener = this.db
-            .collection('users').doc(this.userId).collection('tasks')
-            .where('deleted', '==', false)
-            .onSnapshot((snapshot) => {
-                console.log(`📥 Tasks updated: ${snapshot.size} tasks`);
-                
-                const serverTasks = [];
-                snapshot.forEach((doc) => {
-                    serverTasks.push(window.Task.fromFirestore({ id: doc.id, ...doc.data() }));
-                });
-                
-                // FIXED: Merge server tasks with local, preserving newer local completions
-                const mergedTasks = this.mergeTasksWithLocal(serverTasks);
-                
-                this.updateLocalTasks(mergedTasks);
-                this.notifyTasksChanged(mergedTasks);
-                this.syncErrorCount = 0;
-                
-            }, (error) => {
-                this.handleSyncError('Task listener', error);
-            });
+        // Unsubscribe from listeners
+        this.listeners.forEach(unsubscribe => {
+            try {
+                unsubscribe();
+            } catch (e) {
+                console.error('Error unsubscribing:', e);
+            }
+        });
+        this.listeners = [];
         
-        this.listeners.push(tasksListener);
+        // Clear interval
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
         
-        // Goals listener
-        const goalsListener = this.db
-            .collection('users').doc(this.userId).collection('goals')
-            .where('archived', '==', false)
-            .limit(3)
-            .onSnapshot((snapshot) => {
-                console.log(`📥 Goals updated: ${snapshot.size} goals`);
-                
-                const goals = [];
-                snapshot.forEach((doc) => {
-                    goals.push(window.Goal.fromFirestore({ id: doc.id, ...doc.data() }));
-                });
-                
-                this.updateLocalGoals(goals);
-                this.notifyGoalsChanged(goals);
-                
-            }, (error) => {
-                this.handleSyncError('Goals listener', error);
-            });
-        
-        this.listeners.push(goalsListener);
-        
-        // Health data listener for today
-        const today = window.DateTimeUtils.getTodayDateString();
-        const healthListener = this.db
-            .collection('users').doc(this.userId).collection('health_data')
-            .doc(today)
-            .onSnapshot((doc) => {
-                if (doc.exists) {
-                    console.log('📥 Health data updated');
-                    const healthData = window.HealthData.fromFirestore({ id: doc.id, ...doc.data() });
-                    this.updateLocalHealthData(healthData);
-                    this.notifyHealthDataChanged(healthData);
-                }
-            }, (error) => {
-                this.handleSyncError('Health listener', error);
-            });
-        
-        this.listeners.push(healthListener);
-        
-        console.log('✓ Sync listeners started');
+        console.log('✓ Sync stopped');
     }
     
-    // FIXED: Merge server tasks with local, keeping newer local changes
+    // Real-time task listener with error handling
+    listenToTasks() {
+        try {
+            const unsubscribe = this.db
+                .collection('users').doc(this.userId).collection('tasks')
+                .onSnapshot((snapshot) => {
+                    console.log(`📥 Tasks updated: ${snapshot.size} tasks`);
+                    
+                    const serverTasks = [];
+                    snapshot.forEach((doc) => {
+                        serverTasks.push(window.Task.fromFirestore({ id: doc.id, ...doc.data() }));
+                    });
+                    
+                    // FIXED v1.3.1: Merge with local to preserve newer completions
+                    const mergedTasks = this.mergeTasksWithLocal(serverTasks);
+                    
+                    // Update local cache
+                    this.updateLocalTasks(mergedTasks);
+                    
+                    // Notify UI
+                    this.notifyTasksChanged(mergedTasks);
+                    
+                    // Reset error count on success
+                    this.syncErrorCount = 0;
+                    
+                }, (error) => {
+                    this.handleSyncError('Task listener', error);
+                });
+            
+            this.listeners.push(unsubscribe);
+        } catch (error) {
+            console.error('Failed to set up task listener:', error);
+        }
+    }
+    
+    // ADDED v1.3.1: Merge server tasks with local, keeping newer local changes
     mergeTasksWithLocal(serverTasks) {
-        const localTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+        const localTasksRaw = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
         const localTaskMap = new Map();
         
         // Build map of local tasks
-        localTasks.forEach(t => {
+        localTasksRaw.forEach(t => {
             localTaskMap.set(t.id, t);
         });
         
@@ -121,36 +139,136 @@ class SyncManager {
         return merged;
     }
     
-    // Stop all listeners
-    stopListening() {
-        console.log('⏹️ Stopping sync listeners...');
-        this.listeners.forEach(unsubscribe => unsubscribe());
-        this.listeners = [];
-        console.log('✓ Sync listeners stopped');
+    // Real-time goal listener
+    listenToGoals() {
+        try {
+            const unsubscribe = this.db
+                .collection('users').doc(this.userId).collection('goals')
+                .where('archived', '==', false)
+                .limit(3)
+                .onSnapshot((snapshot) => {
+                    console.log(`📥 Goals updated: ${snapshot.size} goals`);
+                    
+                    const goals = [];
+                    snapshot.forEach((doc) => {
+                        goals.push(window.Goal.fromFirestore({ id: doc.id, ...doc.data() }));
+                    });
+                    
+                    // Update local cache
+                    this.updateLocalGoals(goals);
+                    
+                    // Notify UI
+                    this.notifyGoalsChanged(goals);
+                    
+                }, (error) => {
+                    this.handleSyncError('Goal listener', error);
+                });
+            
+            this.listeners.push(unsubscribe);
+        } catch (error) {
+            console.error('Failed to set up goal listener:', error);
+        }
     }
     
-    // Force sync all data
+    // Real-time health data listener (today only)
+    listenToHealthData() {
+        try {
+            const today = window.DateTimeUtils.getTodayDateString();
+            
+            const unsubscribe = this.db
+                .collection('users').doc(this.userId).collection('health_data')
+                .doc(today)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        console.log(`📥 Health data updated: ${today}`);
+                        const healthData = window.HealthData.fromFirestore({ date: doc.id, ...doc.data() });
+                        
+                        // Update local cache
+                        this.updateLocalHealthData(healthData);
+                        
+                        // Notify UI
+                        this.notifyHealthDataChanged(healthData);
+                    }
+                }, (error) => {
+                    this.handleSyncError('Health data listener', error);
+                });
+            
+            this.listeners.push(unsubscribe);
+        } catch (error) {
+            console.error('Failed to set up health data listener:', error);
+        }
+    }
+    
+    // Handle sync errors with quota detection
+    handleSyncError(source, error) {
+        console.error(`${source} error:`, error);
+        
+        this.syncErrorCount++;
+        
+        // Detect quota exceeded error
+        if (error.code === 'resource-exhausted' || 
+            (error.message && error.message.includes('Quota exceeded'))) {
+            
+            console.warn('⚠️ Firebase quota exceeded - pausing sync');
+            this.quotaExceeded = true;
+            
+            // Show user-friendly message (only once)
+            if (this.syncErrorCount === 1) {
+                this.showToast('Sync paused: Daily quota exceeded. Data saved locally.', 'warning');
+            }
+            
+            // Stop real-time listeners to prevent further quota usage
+            this.listeners.forEach(unsubscribe => {
+                try {
+                    unsubscribe();
+                } catch (e) {}
+            });
+            this.listeners = [];
+        }
+    }
+    
+    // Force sync all data (backup method) with throttling
     async forceSyncAll() {
+        // Don't sync if offline
+        if (!this.isOnline) {
+            console.log('📵 Offline - skipping sync');
+            return;
+        }
+        
+        // Don't sync if quota exceeded
+        if (this.quotaExceeded) {
+            console.log('⚠️ Quota exceeded - skipping sync');
+            return;
+        }
+        
+        // Don't sync if already syncing
         if (this.isSyncing) {
-            console.log('⏳ Sync already in progress');
+            console.log('🔄 Already syncing - skipping');
+            return;
+        }
+        
+        // Throttle: Don't sync more than once per 10 seconds
+        const now = Date.now();
+        if (this.lastSyncAttempt && (now - this.lastSyncAttempt) < 10000) {
+            console.log('🔄 Sync throttled - too soon');
             return;
         }
         
         this.isSyncing = true;
+        this.lastSyncAttempt = now;
+        
         console.log('🔄 Force syncing all data...');
         
         try {
             // Sync tasks
             const tasksSnapshot = await this.db
                 .collection('users').doc(this.userId).collection('tasks')
-                .where('deleted', '==', false)
                 .get();
-            const serverTasks = tasksSnapshot.docs.map(doc => 
+            const tasks = tasksSnapshot.docs.map(doc => 
                 window.Task.fromFirestore({ id: doc.id, ...doc.data() })
             );
-            const mergedTasks = this.mergeTasksWithLocal(serverTasks);
-            this.updateLocalTasks(mergedTasks);
-            this.notifyTasksChanged(mergedTasks);
+            this.updateLocalTasks(tasks);
+            this.notifyTasksChanged(tasks);
             
             // Sync goals
             const goalsSnapshot = await this.db
@@ -170,101 +288,117 @@ class SyncManager {
                 .collection('users').doc(this.userId).collection('health_data')
                 .doc(today)
                 .get();
-            
             if (healthDoc.exists) {
-                const healthData = window.HealthData.fromFirestore({ id: healthDoc.id, ...healthDoc.data() });
+                const healthData = window.HealthData.fromFirestore({ date: healthDoc.id, ...healthDoc.data() });
                 this.updateLocalHealthData(healthData);
                 this.notifyHealthDataChanged(healthData);
             }
             
+            // Update device last_sync (with error handling)
+            try {
+                await this.updateDeviceSync();
+            } catch (e) {
+                console.warn('Device sync update failed (non-critical):', e);
+            }
+            
+            // Process offline queue if available
+            if (window.offlineQueue) {
+                await window.offlineQueue.processQueue(this.userId);
+            }
+            
+            console.log('✅ Sync complete!');
+            
             // Update last sync time
-            this.lastSyncTime = new Date();
-            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LAST_SYNC, this.lastSyncTime.toISOString());
+            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LAST_SYNC, window.DateTimeUtils.utcNowISO());
             
-            // Update device sync record
-            await this.updateDeviceSync();
-            
-            console.log('✓ Force sync complete');
-            this.quotaExceeded = false;
+            // Reset error count on success
             this.syncErrorCount = 0;
             
         } catch (error) {
+            console.error('❌ Sync error:', error);
             this.handleSyncError('Force sync', error);
-            throw error;
         } finally {
             this.isSyncing = false;
         }
     }
     
-    // Handle sync errors
-    handleSyncError(context, error) {
-        console.error(`Sync error in ${context}:`, error);
-        
-        if (error.code === 'resource-exhausted') {
-            this.quotaExceeded = true;
-            console.warn('⚠️ Firebase quota exceeded. Sync paused until midnight UTC.');
-        }
-        
-        this.syncErrorCount++;
-        
-        if (this.syncErrorCount >= this.maxSyncErrors) {
-            console.error('❌ Too many sync errors. Stopping listeners.');
-            this.stopListening();
-        }
-    }
-    
-    // Update device sync timestamp
+    // Update device last_sync timestamp
     async updateDeviceSync() {
+        const deviceId = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
+        if (!deviceId) return;
+        
         try {
-            const deviceId = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
-            const deviceName = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_NAME) || 'PWA';
-            
             await this.db
-                .collection('users').doc(this.userId).collection('devices')
+                .collection(`users/${this.userId}/devices`)
                 .doc(deviceId)
-                .set({
-                    device_id: deviceId,
-                    device_name: deviceName,
-                    platform: 'pwa',
-                    last_sync: window.DateTimeUtils.utcNowISO(),
-                    app_version: window.CONSTANTS.APP_VERSION
-                }, { merge: true });
-                
+                .update({
+                    last_sync: window.DateTimeUtils.utcNowISO()
+                });
         } catch (error) {
-            console.error('Error updating device sync:', error);
+            // Don't treat device update failure as critical
+            console.warn('Error updating device sync (non-critical):', error);
         }
     }
     
-    // Local storage updates
+    // Online/offline handlers
+    onOnline() {
+        console.log('🌐 Back online');
+        this.isOnline = true;
+        
+        // Reset quota flag when coming back online (quota resets daily)
+        // User might have been offline overnight when quota reset
+        this.quotaExceeded = false;
+        this.syncErrorCount = 0;
+        
+        // Restart listeners
+        this.listenToTasks();
+        this.listenToGoals();
+        this.listenToHealthData();
+        
+        this.forceSyncAll();
+        this.showToast('Back online! Syncing...', 'success');
+        this.hideOfflineBanner();
+    }
+    
+    onOffline() {
+        console.log('📵 Went offline');
+        this.isOnline = false;
+        this.showToast('Offline mode - changes will sync when online', 'warning');
+        this.showOfflineBanner();
+    }
+    
+    // Local cache methods
     updateLocalTasks(tasks) {
-        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, tasks.map(t => t.toFirestore ? t.toFirestore() : t));
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, tasks.map(t => t.toFirestore()));
     }
     
     updateLocalGoals(goals) {
-        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.GOALS, goals.map(g => g.toFirestore ? g.toFirestore() : g));
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.GOALS, goals.map(g => g.toFirestore()));
     }
     
     updateLocalHealthData(healthData) {
-        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.HEALTH_DATA_TODAY, healthData.toFirestore ? healthData.toFirestore() : healthData);
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.HEALTH_DATA_TODAY, healthData.toFirestore());
     }
     
-    // Get cached data
+    // Get cached tasks
     getCachedTasks() {
         const data = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
         return data.map(t => window.Task.fromFirestore(t));
     }
     
+    // Get cached goals
     getCachedGoals() {
         const data = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.GOALS, []);
         return data.map(g => window.Goal.fromFirestore(g));
     }
     
+    // Get cached health data
     getCachedHealthData() {
         const data = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.HEALTH_DATA_TODAY);
         return data ? window.HealthData.fromFirestore(data) : null;
     }
     
-    // Notify UI of changes
+    // UI notification methods
     notifyTasksChanged(tasks) {
         window.dispatchEvent(new CustomEvent('tasks-changed', { detail: tasks }));
     }
@@ -276,7 +410,45 @@ class SyncManager {
     notifyHealthDataChanged(healthData) {
         window.dispatchEvent(new CustomEvent('health-data-changed', { detail: healthData }));
     }
+    
+    // Toast notification
+    showToast(message, type = 'info') {
+        if (window.App && window.App.showToast) {
+            window.App.showToast(message, type);
+        }
+    }
+    
+    // Offline banner
+    showOfflineBanner() {
+        const banner = document.getElementById('offline-banner');
+        if (banner) {
+            banner.style.display = 'flex';
+            this.updateOfflineQueueCount();
+        }
+    }
+    
+    hideOfflineBanner() {
+        const banner = document.getElementById('offline-banner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
+    }
+    
+    updateOfflineQueueCount() {
+        const counter = document.getElementById('offline-queue-count');
+        if (counter && window.offlineQueue) {
+            const count = window.offlineQueue.getQueueCount();
+            counter.textContent = count > 0 ? ` - ${count} pending` : '';
+        }
+    }
+    
+    // Check if sync is ready
+    isReady() {
+        return this.userId && this.db && !this.quotaExceeded;
+    }
 }
 
+// Export
 window.SyncManager = SyncManager;
-console.log('✓ SyncManager loaded (v1.3.1 - merge fix)');
+
+console.log('✓ SyncManager loaded');
