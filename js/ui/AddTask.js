@@ -422,9 +422,14 @@ const AddTaskScreen = {
             
             await window.db.collection('users').doc(userId).collection('tasks').doc(task.id).set(task.toFirestore());
             
-            // Update local cache
+            // Update local cache - check for duplicates first
             const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
-            cachedTasks.push(task.toFirestore());
+            const existingIndex = cachedTasks.findIndex(t => t.id === task.id);
+            if (existingIndex !== -1) {
+                cachedTasks[existingIndex] = task.toFirestore();
+            } else {
+                cachedTasks.push(task.toFirestore());
+            }
             window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
             
             window.dispatchEvent(new CustomEvent('tasks-changed', { detail: cachedTasks.map(t => window.Task.fromFirestore(t)) }));
@@ -435,7 +440,12 @@ const AddTaskScreen = {
             console.error('Error creating task:', e);
             if (e.code === 'resource-exhausted') {
                 const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
-                cachedTasks.push(task.toFirestore());
+                const existingIndex = cachedTasks.findIndex(t => t.id === task.id);
+                if (existingIndex !== -1) {
+                    cachedTasks[existingIndex] = task.toFirestore();
+                } else {
+                    cachedTasks.push(task.toFirestore());
+                }
                 window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
                 window.dispatchEvent(new CustomEvent('tasks-changed', { detail: cachedTasks.map(t => window.Task.fromFirestore(t)) }));
                 window.App.showToast('Task saved locally - will sync later', 'warning');
@@ -448,4 +458,4 @@ const AddTaskScreen = {
 };
 
 window.AddTaskScreen = AddTaskScreen;
-console.log('✓ AddTaskScreen loaded (v1.3.0 - tabs + timezone fixed)');
+console.log('✓ AddTaskScreen loaded (v1.3.2 - no duplicates);

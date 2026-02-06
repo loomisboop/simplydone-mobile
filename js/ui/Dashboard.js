@@ -52,6 +52,8 @@ const DashboardScreen = {
         if (!this.eventListenersAttached) {
             window.addEventListener('tasks-changed', (e) => {
                 this.tasks = e.detail;
+                this.checkForExpiredTasks();
+                this.renderItemsToResolveBanner();
                 this.renderDoTheseThreeNow();
                 this.renderBeforeMyDayEnds();
                 this.renderStats();
@@ -517,19 +519,22 @@ const DashboardScreen = {
         const addedAtMap = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, {});
         let hasChanges = false;
         
+        console.log('🔍 Checking for expired tasks...', this.tasks.length, 'total tasks');
+        
         // Check Do These 3 Now tasks - if past end time, add to resolve
         this.tasks.forEach(task => {
             if (task.completed_at || task.deleted) return;
             if (itemsToResolve.includes(task.id)) return; // Already in resolve list
             
-            // Check if it's a time-based task past its end time
-            if (task.trigger_type === 'time' && task.stop && !task.before_day_ends) {
+            // Check if it's a scheduled/time-based task past its end time (not BMDE)
+            // A task qualifies if it has a stop time and is not a BMDE task
+            if (task.stop && !task.before_day_ends && task.type !== 'rainy_day') {
                 const stopTime = new Date(task.stop);
                 if (now > stopTime) {
                     itemsToResolve.push(task.id);
                     addedAtMap[task.id] = now.toISOString();
                     hasChanges = true;
-                    console.log('📋 Task expired, added to resolve:', task.name);
+                    console.log('📋 Task expired, added to resolve:', task.name, 'stop was:', task.stop);
                 }
             }
         });
@@ -546,16 +551,23 @@ const DashboardScreen = {
                 if (task.completed_at || task.deleted) return;
                 if (itemsToResolve.includes(task.id)) return;
                 
-                if (task.before_day_ends && task.stop) {
-                    const stopDate = new Date(task.stop);
-                    // If the BMDE task's stop date is today or earlier
-                    if (stopDate <= workdayEndToday) {
+                if (task.before_day_ends) {
+                    // BMDE task - check if its stop date is today or earlier
+                    if (task.stop) {
+                        const stopDate = new Date(task.stop);
+                        if (stopDate <= workdayEndToday) {
+                            itemsToResolve.push(task.id);
+                            addedAtMap[task.id] = now.toISOString();
+                            hasChanges = true;
+                            console.log('📋 BMDE task expired, added to resolve:', task.name);
+                            this.showBMDEReminder(task);
+                        }
+                    } else {
+                        // BMDE task without stop time - it's for today
                         itemsToResolve.push(task.id);
                         addedAtMap[task.id] = now.toISOString();
                         hasChanges = true;
-                        console.log('📋 BMDE task expired, added to resolve:', task.name);
-                        
-                        // Show popup notification for BMDE tasks
+                        console.log('📋 BMDE task (no stop) expired, added to resolve:', task.name);
                         this.showBMDEReminder(task);
                     }
                 }
@@ -563,6 +575,7 @@ const DashboardScreen = {
         }
         
         if (hasChanges) {
+            console.log('📋 Items to resolve updated:', itemsToResolve.length, 'items');
             window.Storage.set(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, itemsToResolve);
             window.Storage.set(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, addedAtMap);
         }
@@ -817,4 +830,4 @@ const DashboardScreen = {
 };
 
 window.DashboardScreen = DashboardScreen;
-console.log('✓ DashboardScreen loaded (v1.3.2)');
+console.log('✓ DashboardScreen loaded (v1.3.2 - fixed)');
