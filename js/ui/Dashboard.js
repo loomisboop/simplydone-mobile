@@ -15,6 +15,8 @@ const DashboardScreen = {
         
         container.innerHTML = `
             <div class="dashboard-screen">
+                <div id="items-to-resolve-banner"></div>
+                
                 <div id="goals-tiles-container" class="goals-tiles-row"></div>
                 
                 <div class="quick-challenge-launcher">
@@ -40,6 +42,8 @@ const DashboardScreen = {
         `;
         
         this.setupEventListeners();
+        this.checkForExpiredTasks();
+        this.renderItemsToResolveBanner();
         this.renderGoalsTiles();
         this.renderDoTheseThreeNow();
         this.renderBeforeMyDayEnds();
@@ -121,7 +125,8 @@ const DashboardScreen = {
     selectDoTheseThreeNow() {
         const now = new Date();
         const locationTriggered = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, []);
-        const eligible = this.tasks.filter(t => !t.completed_at && !t.deleted && !t.before_day_ends && t.type !== window.CONSTANTS.TASK_TYPES.RAINY_DAY);
+        const itemsToResolve = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, []);
+        const eligible = this.tasks.filter(t => !t.completed_at && !t.deleted && !t.before_day_ends && t.type !== window.CONSTANTS.TASK_TYPES.RAINY_DAY && !itemsToResolve.includes(t.id));
         const result = [];
         
         // Location tasks that are triggered (stay until done)
@@ -131,7 +136,7 @@ const DashboardScreen = {
         });
         result.push(...locTasks.slice(0, 3));
         
-        // Time-based tasks active now
+        // Time-based tasks active now (not past their end time)
         if (result.length < 3) {
             const timeTasks = eligible.filter(t => {
                 if (t.trigger_type === window.CONSTANTS.TRIGGER_TYPES.LOCATION) return false;
@@ -152,7 +157,8 @@ const DashboardScreen = {
         const container = document.getElementById('bmde-container');
         if (!container) return;
         
-        const bmdeTasks = this.tasks.filter(t => t.before_day_ends && !t.completed_at && !t.deleted && t.type !== window.CONSTANTS.TASK_TYPES.RAINY_DAY);
+        const itemsToResolve = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, []);
+        const bmdeTasks = this.tasks.filter(t => t.before_day_ends && !t.completed_at && !t.deleted && t.type !== window.CONSTANTS.TASK_TYPES.RAINY_DAY && !itemsToResolve.includes(t.id));
         
         if (bmdeTasks.length === 0) {
             container.innerHTML = '<div class="empty-state"><p class="empty-state-message">No "Before Day Ends" tasks<br>Park a task here for later today</p></div>';
@@ -322,10 +328,19 @@ const DashboardScreen = {
                 sync_version: firebase.firestore.FieldValue.increment(1)
             });
             
+            // v1.3.2: Notify GeofenceMonitor to prevent re-triggering
             if (task.trigger_type === window.CONSTANTS.TRIGGER_TYPES.LOCATION) {
                 const triggered = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, []);
                 window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, triggered.filter(id => id !== taskId));
+                
+                // Tell GeofenceMonitor this task is done
+                if (window.geofenceMonitor) {
+                    window.geofenceMonitor.markTaskCompleted(taskId);
+                }
             }
+            
+            // v1.3.2: Remove from Items to Resolve if it was there
+            this.removeFromItemsToResolve(taskId);
             
             const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
             const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
@@ -333,6 +348,7 @@ const DashboardScreen = {
             this.tasks = cachedTasks.map(t => window.Task.fromFirestore(t));
             this.renderDoTheseThreeNow();
             this.renderBeforeMyDayEnds();
+            this.renderItemsToResolveBanner();
             this.renderStats();
             window.dispatchEvent(new CustomEvent('tasks-changed', { detail: this.tasks }));
             window.App.showToast(points > 0 ? window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED + ' +' + points + ' points!' : window.CONSTANTS.SUCCESS_MESSAGES.TASK_COMPLETED, 'success');
@@ -489,8 +505,316 @@ const DashboardScreen = {
         if (isCollapsed) { container.classList.remove('collapsed'); toggle.textContent = '▼ Hide'; }
         else { container.classList.add('collapsed'); toggle.textContent = '▶ Show'; }
         window.Storage.set(window.CONSTANTS.STORAGE_KEYS.BMDE_EXPANDED, !isCollapsed);
+    },
+    
+    // =========================================================================
+    // v1.3.2: ITEMS TO RESOLVE
+    // =========================================================================
+    
+    checkForExpiredTasks() {
+        const now = new Date();
+        const itemsToResolve = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, []);
+        const addedAtMap = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, {});
+        let hasChanges = false;
+        
+        // Check Do These 3 Now tasks - if past end time, add to resolve
+        this.tasks.forEach(task => {
+            if (task.completed_at || task.deleted) return;
+            if (itemsToResolve.includes(task.id)) return; // Already in resolve list
+            
+            // Check if it's a time-based task past its end time
+            if (task.trigger_type === 'time' && task.stop && !task.before_day_ends) {
+                const stopTime = new Date(task.stop);
+                if (now > stopTime) {
+                    itemsToResolve.push(task.id);
+                    addedAtMap[task.id] = now.toISOString();
+                    hasChanges = true;
+                    console.log('📋 Task expired, added to resolve:', task.name);
+                }
+            }
+        });
+        
+        // Check BMDE tasks - if past workday end time TODAY, add to resolve
+        const workdayEnd = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.WORKDAY_END_TIME, '17:00');
+        const [endHour, endMin] = workdayEnd.split(':').map(Number);
+        const workdayEndToday = new Date();
+        workdayEndToday.setHours(endHour, endMin, 0, 0);
+        
+        if (now > workdayEndToday) {
+            // Check for BMDE tasks that should have been done today
+            this.tasks.forEach(task => {
+                if (task.completed_at || task.deleted) return;
+                if (itemsToResolve.includes(task.id)) return;
+                
+                if (task.before_day_ends && task.stop) {
+                    const stopDate = new Date(task.stop);
+                    // If the BMDE task's stop date is today or earlier
+                    if (stopDate <= workdayEndToday) {
+                        itemsToResolve.push(task.id);
+                        addedAtMap[task.id] = now.toISOString();
+                        hasChanges = true;
+                        console.log('📋 BMDE task expired, added to resolve:', task.name);
+                        
+                        // Show popup notification for BMDE tasks
+                        this.showBMDEReminder(task);
+                    }
+                }
+            });
+        }
+        
+        if (hasChanges) {
+            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, itemsToResolve);
+            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, addedAtMap);
+        }
+    },
+    
+    showBMDEReminder(task) {
+        // Show a toast notification
+        if (window.App && window.App.showToast) {
+            window.App.showToast('⚠️ BMDE task not completed: ' + task.name, 'warning');
+        }
+    },
+    
+    getItemsToResolve() {
+        const itemIds = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, []);
+        return this.tasks.filter(t => itemIds.includes(t.id) && !t.completed_at && !t.deleted);
+    },
+    
+    hasOldItems() {
+        const addedAtMap = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, {});
+        const fiveDaysAgo = new Date();
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+        
+        for (const taskId in addedAtMap) {
+            const addedAt = new Date(addedAtMap[taskId]);
+            if (addedAt < fiveDaysAgo) {
+                return true;
+            }
+        }
+        return false;
+    },
+    
+    renderItemsToResolveBanner() {
+        const banner = document.getElementById('items-to-resolve-banner');
+        if (!banner) return;
+        
+        const items = this.getItemsToResolve();
+        
+        if (items.length === 0) {
+            banner.innerHTML = '';
+            return;
+        }
+        
+        const isOld = this.hasOldItems();
+        const colorClass = isOld ? 'resolve-banner-red' : 'resolve-banner-orange';
+        
+        banner.innerHTML = `
+            <button class="resolve-banner ${colorClass}" onclick="DashboardScreen.showItemsToResolveModal()">
+                <span class="resolve-count">${items.length}</span> Items to Resolve
+            </button>
+        `;
+    },
+    
+    showItemsToResolveModal() {
+        const items = this.getItemsToResolve();
+        const addedAtMap = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, {});
+        
+        const itemsHTML = items.map(task => {
+            const addedAt = addedAtMap[task.id] ? new Date(addedAtMap[task.id]) : new Date();
+            const daysAgo = Math.floor((new Date() - addedAt) / (1000 * 60 * 60 * 24));
+            const daysText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : daysAgo + ' days ago';
+            const isOld = daysAgo >= 5;
+            
+            return `
+                <div class="resolve-item ${isOld ? 'resolve-item-old' : ''}">
+                    <div class="resolve-item-info">
+                        <div class="resolve-item-name">${task.name}</div>
+                        <div class="resolve-item-date">Added: ${daysText}</div>
+                    </div>
+                    <div class="resolve-item-actions">
+                        <button class="resolve-btn resolve-btn-done" onclick="DashboardScreen.resolveTaskDone('${task.id}')">✓ Done</button>
+                        <button class="resolve-btn resolve-btn-park" onclick="DashboardScreen.resolveTaskPark('${task.id}')">📅 Park</button>
+                        <button class="resolve-btn resolve-btn-delete" onclick="DashboardScreen.resolveTaskDelete('${task.id}')">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'resolve-modal';
+        modal.innerHTML = `
+            <div class="modal-content resolve-modal">
+                <div class="modal-header">
+                    <h2>Items to Resolve</h2>
+                    <button class="modal-close" onclick="document.getElementById('resolve-modal').remove()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p class="resolve-instructions">These tasks have passed their deadline. Mark them done, park them to a new date, or delete them.</p>
+                    <div class="resolve-items-list">
+                        ${itemsHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    },
+    
+    async resolveTaskDone(taskId) {
+        await this.completeTask(taskId);
+        this.removeFromItemsToResolve(taskId);
+        document.getElementById('resolve-modal')?.remove();
+        this.showItemsToResolveModal();
+        if (this.getItemsToResolve().length === 0) {
+            document.getElementById('resolve-modal')?.remove();
+        }
+    },
+    
+    resolveTaskPark(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        // Show park modal with date/time pickers
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const defaultStart = tomorrow.toISOString().slice(0, 16);
+        const defaultStop = new Date(tomorrow.getTime() + 60 * 60 * 1000).toISOString().slice(0, 16);
+        
+        const parkModal = document.createElement('div');
+        parkModal.className = 'modal-overlay';
+        parkModal.id = 'park-modal';
+        parkModal.innerHTML = `
+            <div class="modal-content park-modal">
+                <div class="modal-header">
+                    <h2>Park Task</h2>
+                    <button class="modal-close" onclick="document.getElementById('park-modal').remove()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p>Reschedule "${task.name}" to a new time:</p>
+                    <div class="form-group">
+                        <label>New Start Time</label>
+                        <input type="datetime-local" id="park-start" value="${defaultStart}">
+                    </div>
+                    <div class="form-group">
+                        <label>New End Time</label>
+                        <input type="datetime-local" id="park-stop" value="${defaultStop}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="document.getElementById('park-modal').remove()">Cancel</button>
+                    <button class="btn-primary" onclick="DashboardScreen.confirmParkTask('${taskId}')">Park Task</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(parkModal);
+        parkModal.addEventListener('click', (e) => { if (e.target === parkModal) parkModal.remove(); });
+    },
+    
+    async confirmParkTask(taskId) {
+        const startInput = document.getElementById('park-start');
+        const stopInput = document.getElementById('park-stop');
+        
+        if (!startInput.value || !stopInput.value) {
+            window.App.showToast('Please set both start and end times', 'error');
+            return;
+        }
+        
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        const newStart = window.DateTimeUtils.localDateTimeToUTC(startInput.value);
+        const newStop = window.DateTimeUtils.localDateTimeToUTC(stopInput.value);
+        
+        try {
+            const userId = window.Auth.getUserId();
+            await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update({
+                start: newStart,
+                stop: newStop,
+                before_day_ends: false, // No longer a BMDE task
+                modified_at: window.DateTimeUtils.utcNowISO()
+            });
+            
+            // Update local cache
+            const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+            const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+                cachedTasks[taskIndex].start = newStart;
+                cachedTasks[taskIndex].stop = newStop;
+                cachedTasks[taskIndex].before_day_ends = false;
+                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
+            }
+            
+            this.removeFromItemsToResolve(taskId);
+            this.tasks = cachedTasks.map(t => window.Task.fromFirestore(t));
+            
+            document.getElementById('park-modal')?.remove();
+            document.getElementById('resolve-modal')?.remove();
+            
+            this.renderDoTheseThreeNow();
+            this.renderBeforeMyDayEnds();
+            this.renderItemsToResolveBanner();
+            
+            window.App.showToast('Task parked to new time', 'success');
+            
+        } catch (error) {
+            console.error('Error parking task:', error);
+            window.App.showToast('Failed to park task', 'error');
+        }
+    },
+    
+    async resolveTaskDelete(taskId) {
+        if (!confirm('Delete this task permanently?')) return;
+        
+        try {
+            const userId = window.Auth.getUserId();
+            await window.db.collection('users').doc(userId).collection('tasks').doc(taskId).update({
+                deleted: true,
+                modified_at: window.DateTimeUtils.utcNowISO()
+            });
+            
+            // Update local cache
+            const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+            const taskIndex = cachedTasks.findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+                cachedTasks[taskIndex].deleted = true;
+                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
+            }
+            
+            this.removeFromItemsToResolve(taskId);
+            this.tasks = cachedTasks.map(t => window.Task.fromFirestore(t));
+            
+            // Refresh the modal
+            document.getElementById('resolve-modal')?.remove();
+            if (this.getItemsToResolve().length > 0) {
+                this.showItemsToResolveModal();
+            }
+            
+            this.renderDoTheseThreeNow();
+            this.renderBeforeMyDayEnds();
+            this.renderItemsToResolveBanner();
+            
+            window.App.showToast('Task deleted', 'success');
+            
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            window.App.showToast('Failed to delete task', 'error');
+        }
+    },
+    
+    removeFromItemsToResolve(taskId) {
+        const itemsToResolve = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, []);
+        const addedAtMap = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, {});
+        
+        const newItems = itemsToResolve.filter(id => id !== taskId);
+        delete addedAtMap[taskId];
+        
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE, newItems);
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.ITEMS_TO_RESOLVE_ADDED_AT, addedAtMap);
     }
 };
 
 window.DashboardScreen = DashboardScreen;
-console.log('✓ DashboardScreen loaded (v1.3.0)');
+console.log('✓ DashboardScreen loaded (v1.3.2)');

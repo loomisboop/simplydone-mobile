@@ -2275,3 +2275,162 @@
 .qc-launch-text {
     font-size: 16px;
 }
+
+/* ============================================================================
+   v1.3.2 - Items to Resolve Banner & Modal
+   ============================================================================ */
+
+#items-to-resolve-banner {
+    padding: 0 16px;
+}
+
+.resolve-banner {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+}
+
+.resolve-banner-orange {
+    background: #FF9800;
+}
+
+.resolve-banner-orange:active {
+    background: #F57C00;
+}
+
+.resolve-banner-red {
+    background: #F44336;
+}
+
+.resolve-banner-red:active {
+    background: #D32F2F;
+}
+
+.resolve-count {
+    background: rgba(255,255,255,0.3);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.resolve-modal {
+    max-width: 500px;
+    max-height: 80vh;
+}
+
+.resolve-instructions {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.resolve-items-list {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.resolve-item {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.resolve-item-old {
+    background: #ffebee;
+    border-left: 4px solid #F44336;
+}
+
+.resolve-item-info {
+    margin-bottom: 10px;
+}
+
+.resolve-item-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #212121;
+}
+
+.resolve-item-date {
+    font-size: 12px;
+    color: #757575;
+    margin-top: 4px;
+}
+
+.resolve-item-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.resolve-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.resolve-btn-done {
+    background: #4CAF50;
+    color: white;
+}
+
+.resolve-btn-done:active {
+    background: #43A047;
+}
+
+.resolve-btn-park {
+    background: #2196F3;
+    color: white;
+}
+
+.resolve-btn-park:active {
+    background: #1976D2;
+}
+
+.resolve-btn-delete {
+    background: #9E9E9E;
+    color: white;
+}
+
+.resolve-btn-delete:active {
+    background: #757575;
+}
+
+/* Park Modal */
+.park-modal {
+    max-width: 400px;
+}
+
+.park-modal .form-group {
+    margin-bottom: 16px;
+}
+
+.park-modal label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #212121;
+}
+
+.park-modal input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+}

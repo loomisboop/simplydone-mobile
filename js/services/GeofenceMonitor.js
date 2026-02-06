@@ -1,42 +1,41 @@
-// SDAPWA v1.3.0 - Geofence Monitor (iOS compatible)
+// SDAPWA v1.3.2 - Geofence Monitor (FIXED: completed tasks don't re-trigger)
 
 class GeofenceMonitor {
     constructor(userId) {
         this.userId = userId;
-        this.watchId = null;
         this.locationTasks = [];
+        this.watchId = null;
         this.checkInterval = null;
-        this.isRunning = false;
         this.lastPosition = null;
+        this.isRunning = false;
+        this.completedTaskIds = new Set(); // Track completed task IDs to prevent re-triggering
     }
     
     async start() {
-        if (this.isRunning) { console.log('Geofence monitor already running'); return; }
+        if (this.isRunning) return;
+        this.isRunning = true;
+        
         console.log('📍 Starting geofence monitor...');
         
-        // Check for geolocation support
-        if (!('geolocation' in navigator)) {
+        // Load previously completed location task IDs from storage
+        const completedIds = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.COMPLETED_LOCATION_TASKS, []);
+        this.completedTaskIds = new Set(completedIds);
+        
+        // Request location permission
+        if (!navigator.geolocation) {
             console.warn('Geolocation not supported');
             return;
         }
         
-        // Request permission
-        try {
-            const position = await this.getCurrentPosition();
-            this.lastPosition = position;
-            console.log('📍 Initial position:', position.lat, position.lon);
-        } catch (e) {
-            console.warn('Could not get initial position:', e.message);
-        }
-        
-        this.isRunning = true;
-        
-        // Start watching position
+        // Watch position continuously
         this.watchId = navigator.geolocation.watchPosition(
             (position) => {
-                const pos = { lat: position.coords.latitude, lon: position.coords.longitude, accuracy: position.coords.accuracy };
-                this.lastPosition = pos;
-                this.checkGeofences(pos.lat, pos.lon);
+                this.lastPosition = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                this.checkGeofences(this.lastPosition.lat, this.lastPosition.lon);
             },
             (error) => {
                 console.error('Location watch error:', error.message);
@@ -54,7 +53,35 @@ class GeofenceMonitor {
         // Load location tasks
         await this.loadLocationTasks();
         
+        // Listen for task changes to update our list
+        window.addEventListener('tasks-changed', (e) => {
+            this.onTasksChanged(e.detail);
+        });
+        
         console.log('✓ Geofence monitor started');
+    }
+    
+    // Called when tasks change - update our location tasks list
+    onTasksChanged(tasks) {
+        // Update completed task IDs
+        tasks.forEach(task => {
+            if (task.trigger_type === 'location' && task.completed_at) {
+                this.completedTaskIds.add(task.id);
+            }
+        });
+        
+        // Save to storage
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.COMPLETED_LOCATION_TASKS, Array.from(this.completedTaskIds));
+        
+        // Update location tasks list (exclude completed)
+        this.locationTasks = tasks.filter(t => 
+            t.trigger_type === 'location' && 
+            !t.completed_at && 
+            !t.deleted &&
+            !this.completedTaskIds.has(t.id)
+        );
+        
+        console.log('📍 Location tasks updated: ' + this.locationTasks.length + ' active');
     }
     
     startPolling() {
@@ -94,8 +121,6 @@ class GeofenceMonitor {
             clearInterval(this.checkInterval);
             this.checkInterval = null;
         }
-        
-        console.log('✓ Geofence monitor stopped');
     }
     
     async loadLocationTasks() {
@@ -108,7 +133,7 @@ class GeofenceMonitor {
             
             this.locationTasks = snapshot.docs
                 .map(doc => window.Task.fromFirestore({ id: doc.id, ...doc.data() }))
-                .filter(t => !t.completed_at);
+                .filter(t => !t.completed_at && !this.completedTaskIds.has(t.id));
             
             console.log('📍 Monitoring ' + this.locationTasks.length + ' location tasks');
         } catch (e) {
@@ -117,14 +142,16 @@ class GeofenceMonitor {
             const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
             this.locationTasks = cachedTasks
                 .map(t => window.Task.fromFirestore(t))
-                .filter(t => t.trigger_type === 'location' && !t.completed_at && !t.deleted);
+                .filter(t => t.trigger_type === 'location' && !t.completed_at && !t.deleted && !this.completedTaskIds.has(t.id));
         }
     }
     
     checkGeofences(userLat, userLon) {
         for (const task of this.locationTasks) {
             if (!task.location_lat || !task.location_lon) continue;
-            if (task.completed_at) continue;
+            
+            // Double-check: skip if completed or in completed set
+            if (task.completed_at || this.completedTaskIds.has(task.id)) continue;
             
             const radiusMeters = task.location_radius_meters || 100;
             const inside = this.isInsideGeofence(userLat, userLon, task.location_lat, task.location_lon, radiusMeters);
@@ -133,14 +160,12 @@ class GeofenceMonitor {
             if (inside && !task.location_arrived_at) {
                 this.onGeofenceEnter(task, userLat, userLon);
             }
-            // Exit detection (optional - location tasks stay until done)
-            // We don't auto-remove location tasks when leaving
         }
     }
     
     isInsideGeofence(userLat, userLon, targetLat, targetLon, radiusMeters) {
         // Haversine formula
-        const R = 6371000; // Earth radius in meters
+        const R = 6371000; // Earth's radius in meters
         const dLat = (targetLat - userLat) * Math.PI / 180;
         const dLon = (targetLon - userLon) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -153,81 +178,77 @@ class GeofenceMonitor {
     }
     
     async onGeofenceEnter(task, userLat, userLon) {
-        console.log('📍 Entered geofence: ' + task.name);
+        console.log('📍 Entered geofence for task:', task.name);
         
+        // Mark arrival time
+        task.location_arrived_at = window.DateTimeUtils.utcNowISO();
+        
+        // Add to triggered tasks list (for showing in Do These 3 Now)
+        const triggeredTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, []);
+        if (!triggeredTasks.includes(task.id)) {
+            triggeredTasks.push(task.id);
+            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, triggeredTasks);
+        }
+        
+        // Update task in Firestore
         try {
-            const deviceId = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.DEVICE_ID);
-            const arrivalTime = window.DateTimeUtils.utcNowISO();
-            
-            // Update task in Firestore
-            await window.db.collection('users/' + this.userId + '/tasks').doc(task.id).update({
-                location_arrived_at: arrivalTime,
-                modified_at: arrivalTime,
-                modified_by: deviceId,
-                sync_version: firebase.firestore.FieldValue.increment(1)
+            const userId = window.Auth.getUserId();
+            await window.db.collection('users').doc(userId).collection('tasks').doc(task.id).update({
+                location_arrived_at: task.location_arrived_at,
+                modified_at: window.DateTimeUtils.utcNowISO()
             });
-            
-            // Update local task
-            task.location_arrived_at = arrivalTime;
-            
-            // Add to triggered tasks list (for Do These 3 Now)
-            const triggered = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, []);
-            if (!triggered.includes(task.id)) {
-                triggered.push(task.id);
-                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, triggered);
-            }
-            
-            // Update local cache
-            const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
-            const idx = cachedTasks.findIndex(t => t.id === task.id);
-            if (idx !== -1) {
-                cachedTasks[idx].location_arrived_at = arrivalTime;
-                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
-            }
-            
-            // Notify UI to refresh
-            window.dispatchEvent(new CustomEvent('tasks-changed', { 
-                detail: cachedTasks.map(t => window.Task.fromFirestore(t))
-            }));
-            
-            // Show notification
-            this.showArrivalNotification(task);
-            
-            console.log('✓ Task triggered: ' + task.id);
-            
         } catch (e) {
             console.error('Error updating task arrival:', e);
-            
-            // Still add to triggered list locally
-            const triggered = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, []);
-            if (!triggered.includes(task.id)) {
-                triggered.push(task.id);
-                window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, triggered);
-            }
         }
+        
+        // Update local cache
+        const cachedTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.TASKS, []);
+        const taskIndex = cachedTasks.findIndex(t => t.id === task.id);
+        if (taskIndex !== -1) {
+            cachedTasks[taskIndex].location_arrived_at = task.location_arrived_at;
+            window.Storage.set(window.CONSTANTS.STORAGE_KEYS.TASKS, cachedTasks);
+        }
+        
+        // Show notification
+        this.showArrivalNotification(task);
+        
+        // Notify UI to refresh
+        window.dispatchEvent(new CustomEvent('tasks-changed', { 
+            detail: cachedTasks.map(t => window.Task.fromFirestore(t)) 
+        }));
     }
     
     showArrivalNotification(task) {
         // Play sound
         if (window.AudioSystem) {
-            window.AudioSystem.init();
-            window.AudioSystem.playLocationArrivalChime(0.6);
+            window.AudioSystem.playLocationArrivalChime();
         }
         
-        // Show notification
+        // Show toast
+        if (window.App && window.App.showToast) {
+            window.App.showToast('📍 You arrived at ' + (task.location_nickname || 'location') + '!', 'info');
+        }
+        
+        // Browser notification if permitted
         if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('📍 Location Task', {
-                body: 'You\'re near: ' + task.name,
-                icon: 'assets/icons/icon-192.png',
-                tag: 'location-' + task.id,
-                requireInteraction: true
+            new Notification('SimplyDone', {
+                body: 'You arrived at ' + (task.location_nickname || 'your location') + '. Time to: ' + task.name,
+                icon: '/assets/icons/icon-192.png'
             });
         }
+    }
+    
+    // Mark a task as completed (called from Dashboard)
+    markTaskCompleted(taskId) {
+        this.completedTaskIds.add(taskId);
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.COMPLETED_LOCATION_TASKS, Array.from(this.completedTaskIds));
         
-        // Also show in-app toast
-        if (window.App) {
-            window.App.showToast('📍 You\'re near: ' + task.name, 'info');
-        }
+        // Remove from location tasks
+        this.locationTasks = this.locationTasks.filter(t => t.id !== taskId);
+        
+        // Remove from triggered tasks
+        const triggeredTasks = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, []);
+        window.Storage.set(window.CONSTANTS.STORAGE_KEYS.LOCATION_TRIGGERED_TASKS, triggeredTasks.filter(id => id !== taskId));
     }
     
     async refresh() {
@@ -236,4 +257,4 @@ class GeofenceMonitor {
 }
 
 window.GeofenceMonitor = GeofenceMonitor;
-console.log('✓ GeofenceMonitor loaded (v1.3.0)');
+console.log('✓ GeofenceMonitor loaded (v1.3.2 - fixed re-trigger)');

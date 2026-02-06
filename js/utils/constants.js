@@ -1,7 +1,7 @@
 // SDAPWA v1.3.0 - Constants
 
 // App Information
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.3.2';
 const APP_NAME = 'SimplyDone';
 
 // Firebase Collection Names
@@ -144,9 +144,12 @@ const STORAGE_KEYS = {
     LAST_SYNC: 'last_sync',
     CURRENT_TAB: 'current_tab',
     BMDE_EXPANDED: 'bmde_expanded',
-    WORKDAY_END_TIME: 'workday_end_time',  // v1.3.0: User's workday end time (HH:MM)
-    TASK_ORDER: 'task_order',  // v1.3.0: Custom task order for drag/drop
-    LOCATION_TRIGGERED_TASKS: 'location_triggered_tasks'  // v1.3.0: Tasks triggered by location arrival
+    WORKDAY_END_TIME: 'workday_end_time',
+    TASK_ORDER: 'task_order',
+    LOCATION_TRIGGERED_TASKS: 'location_triggered_tasks',
+    COMPLETED_LOCATION_TASKS: 'completed_location_tasks',  // v1.3.2: Prevent re-triggering
+    ITEMS_TO_RESOLVE: 'items_to_resolve',  // v1.3.2: Tasks that need resolution
+    ITEMS_TO_RESOLVE_ADDED_AT: 'items_to_resolve_added_at'  // v1.3.2: When each item was added
 };
 
 // Health Data Source Types
