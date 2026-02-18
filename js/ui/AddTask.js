@@ -458,4 +458,4 @@ const AddTaskScreen = {
 };
 
 window.AddTaskScreen = AddTaskScreen;
-console.log('✓ AddTaskScreen loaded (v1.3.2 - no duplicates);
+console.log('✓ AddTaskScreen loaded (v1.3.2 - no duplicates)');
