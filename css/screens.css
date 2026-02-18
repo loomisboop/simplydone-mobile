@@ -617,7 +617,6 @@
 
 /* Address Autocomplete */
 .address-suggestions {
-    display: none;
     position: absolute;
     background: white;
     border: 1px solid #E0E0E0;

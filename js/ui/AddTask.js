@@ -265,17 +265,39 @@ const AddTaskScreen = {
     
     handleAddressInput(query) {
         clearTimeout(this.autocompleteTimeout);
+        const suggestionsEl = document.getElementById('loc-suggestions');
+        
         if (query.length < 3) {
-            document.getElementById('loc-suggestions').innerHTML = '';
+            if (suggestionsEl) suggestionsEl.innerHTML = '';
             return;
+        }
+        
+        // Show loading indicator
+        if (suggestionsEl) {
+            suggestionsEl.innerHTML = '<div class="suggestion-item">Searching...</div>';
         }
         
         this.autocompleteTimeout = setTimeout(async () => {
             try {
-                const response = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5');
-                const results = await response.json();
+                console.log('🔍 Searching for address:', query);
                 
-                const suggestionsEl = document.getElementById('loc-suggestions');
+                // Use Nominatim geocoding API (OpenStreetMap)
+                const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&addressdetails=1';
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                
+                const results = await response.json();
+                console.log('📍 Address results:', results.length);
+                
+                if (!suggestionsEl) return;
+                
                 if (results.length === 0) {
                     suggestionsEl.innerHTML = '<div class="suggestion-item">No results found</div>';
                     return;
@@ -294,10 +316,14 @@ const AddTaskScreen = {
                             address: item.dataset.address
                         };
                         suggestionsEl.innerHTML = '';
+                        console.log('📍 Selected location:', this.selectedLocation);
                     });
                 });
             } catch (e) {
                 console.error('Geocoding error:', e);
+                if (suggestionsEl) {
+                    suggestionsEl.innerHTML = '<div class="suggestion-item">Error searching. Check your connection.</div>';
+                }
             }
         }, 500);
     },
