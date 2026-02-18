@@ -2434,3 +2434,164 @@
     border-radius: 8px;
     font-size: 16px;
 }
+
+/* ============================================================================
+   v1.3.2 - Email/Password Sign In
+   ============================================================================ */
+
+.signin-email-section {
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 16px;
+}
+
+.signin-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+}
+
+.signin-tab {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    background: #f5f5f5;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.signin-tab.active {
+    background: #4CAF50;
+    color: white;
+}
+
+.signin-form,
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.signin-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.signin-input:focus {
+    border-color: #4CAF50;
+}
+
+.signin-email-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.signin-email-btn:hover {
+    background: #43A047;
+}
+
+.signin-email-btn:disabled {
+    background: #9E9E9E;
+    cursor: not-allowed;
+}
+
+.signin-forgot-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.signin-forgot-btn:hover {
+    color: #4CAF50;
+    text-decoration: underline;
+}
+
+.signin-divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 320px;
+    margin: 8px 0;
+}
+
+.signin-divider::before,
+.signin-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e0e0e0;
+}
+
+.signin-divider span {
+    padding: 0 16px;
+    color: #999;
+    font-size: 14px;
+}
+
+.signin-google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    padding: 14px 24px;
+    background: white;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.signin-google-btn:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.signin-google-btn:disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.google-icon {
+    flex-shrink: 0;
+}
+
+.signin-ios-note {
+    max-width: 320px;
+    margin-top: 16px;
+    padding: 12px;
+    background: #FFF3E0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #E65100;
+    text-align: center;
+    line-height: 1.4;
+}
