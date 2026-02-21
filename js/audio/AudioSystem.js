@@ -30,6 +30,12 @@ const AudioSystem = {
         this.activeNodes = [];
         this.isPlaying = false;
         this.currentSound = null;
+        
+        // Also stop the 528Hz audio element if playing
+        if (this.audioElement528) {
+            this.audioElement528.pause();
+            this.audioElement528.currentTime = 0;
+        }
     },
     
     // ============================================================================
@@ -439,6 +445,28 @@ const AudioSystem = {
     // HELPER: Play sound by name
     // ============================================================================
     
+    // Play 528Hz Ethereal Ambient Binaural (from MP3 file)
+    play528HzEthereal(volume = 0.5) {
+        this.init();
+        this.stopAll();
+        this.currentSound = '528hz';
+        this.isPlaying = true;
+        
+        // Create audio element for MP3 playback
+        if (!this.audioElement528) {
+            this.audioElement528 = new Audio('assets/sounds/ethereal_ambient_528hz_binaural.mp3');
+            this.audioElement528.loop = true;
+        }
+        
+        this.audioElement528.volume = volume;
+        this.audioElement528.currentTime = 0;
+        this.audioElement528.play().catch(e => {
+            console.error('Error playing 528Hz audio:', e);
+        });
+        
+        console.log('🎵 Playing 528Hz Ethereal Ambient Binaural');
+    },
+    
     play(soundName, volume = 0.5) {
         switch (soundName) {
             case 'rain':
@@ -465,6 +493,9 @@ const AudioSystem = {
             case 'beta':
                 this.playBetaBinaural(volume);
                 break;
+            case '528hz':
+                this.play528HzEthereal(volume);
+                break;
             case 'chime':
                 this.playMeditationEndChime(volume);
                 break;
@@ -482,4 +513,4 @@ const AudioSystem = {
 
 // Export
 window.AudioSystem = AudioSystem;
-console.log('✓ AudioSystem loaded (Web Audio API)');
+console.log('✓ AudioSystem loaded (Web Audio API + 528Hz)');

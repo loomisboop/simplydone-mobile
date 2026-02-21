@@ -143,6 +143,7 @@ const MindfulnessScreen = {
                 <option value="alpha">🧠 Alpha (Relaxation - 10Hz)</option>
                 <option value="theta">🧘 Theta (Deep Meditation - 6Hz)</option>
                 <option value="beta">⚡ Beta (Focus - 18Hz)</option>
+                <option value="528hz">✨ 528Hz Ethereal (Love/Healing)</option>
             </optgroup>
         `;
         

@@ -58,6 +58,28 @@ const DashboardScreen = {
                 this.renderBeforeMyDayEnds();
                 this.renderStats();
             });
+            
+            // Listen for refresh requests (from TaskMonitor)
+            window.addEventListener('refresh-dashboard', () => {
+                console.log('📊 Dashboard refresh requested');
+                this.refresh();
+            });
+            
+            // Listen for notification clicks from service worker
+            navigator.serviceWorker?.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+                    console.log('🔔 Notification click received:', event.data);
+                    this.refresh();
+                }
+            });
+            
+            // Auto-refresh every 60 seconds to keep task visibility up to date
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    this.renderDoTheseThreeNow();
+                    this.renderBeforeMyDayEnds();
+                }
+            }, 60000);
             window.addEventListener('goals-changed', (e) => {
                 this.goals = e.detail;
                 this.renderGoalsTiles();
@@ -83,6 +105,18 @@ const DashboardScreen = {
             const healthDataRaw = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.HEALTH_DATA_TODAY);
             this.healthData = healthDataRaw ? window.HealthData.fromFirestore(healthDataRaw) : null;
         }
+    },
+    
+    // Refresh dashboard data and re-render
+    refresh() {
+        console.log('📊 Refreshing dashboard...');
+        this.loadData();
+        this.checkForExpiredTasks();
+        this.renderItemsToResolveBanner();
+        this.renderGoalsTiles();
+        this.renderDoTheseThreeNow();
+        this.renderBeforeMyDayEnds();
+        this.renderStats();
     },
     
     setupEventListeners() {

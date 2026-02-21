@@ -219,22 +219,29 @@ class GeofenceMonitor {
     }
     
     showArrivalNotification(task) {
-        // Play sound
-        if (window.AudioSystem) {
-            window.AudioSystem.playLocationArrivalChime();
-        }
+        console.log('🔔 Showing location arrival notification for:', task.name);
         
-        // Show toast
-        if (window.App && window.App.showToast) {
-            window.App.showToast('📍 You arrived at ' + (task.location_nickname || 'location') + '!', 'info');
-        }
-        
-        // Browser notification if permitted
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('SimplyDone', {
-                body: 'You arrived at ' + (task.location_nickname || 'your location') + '. Time to: ' + task.name,
-                icon: '/assets/icons/icon-192.png'
-            });
+        // Use NotificationManager if available (preferred)
+        if (window.NotificationManager) {
+            window.NotificationManager.showLocationArrival(task);
+        } else {
+            // Fallback: Play sound
+            if (window.AudioSystem) {
+                window.AudioSystem.playLocationArrivalChime();
+            }
+            
+            // Fallback: Show toast
+            if (window.App && window.App.showToast) {
+                window.App.showToast('📍 You arrived at ' + (task.location_nickname || 'location') + '!', 'info');
+            }
+            
+            // Fallback: Browser notification if permitted
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('SimplyDone', {
+                    body: 'You arrived at ' + (task.location_nickname || 'your location') + '. Time to: ' + task.name,
+                    icon: '/assets/icons/icon-192.png'
+                });
+            }
         }
     }
     

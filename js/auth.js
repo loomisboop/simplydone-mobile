@@ -294,6 +294,12 @@ const Auth = {
             // Register device
             await this.registerDevice(user.uid);
             
+            // Initialize NotificationManager
+            if (window.NotificationManager) {
+                await window.NotificationManager.init();
+                console.log('✓ NotificationManager initialized');
+            }
+            
             // Initialize sync
             if (window.SyncManager && !window.syncManager) {
                 window.syncManager = new window.SyncManager(user.uid);
@@ -304,6 +310,13 @@ const Auth = {
             if (window.GeofenceMonitor && !window.geofenceMonitor) {
                 window.geofenceMonitor = new window.GeofenceMonitor(user.uid);
                 window.geofenceMonitor.start();
+            }
+            
+            // Initialize TaskMonitor for scheduled task notifications
+            if (window.TaskMonitor) {
+                window.taskMonitor = new window.TaskMonitor();
+                window.taskMonitor.start();
+                console.log('✓ TaskMonitor started');
             }
             
             // Show dashboard
