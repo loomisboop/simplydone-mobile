@@ -153,11 +153,36 @@ const SettingsScreen = {
     },
     
     getNotificationStatus() {
-        if (!('Notification' in window)) return 'Not supported';
+        if (typeof Notification === 'undefined' || !('Notification' in window)) {
+            // Check if iOS
+            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                // Check if standalone mode (added to Home Screen)
+                if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
+                    return '⚠️ Tap Enable below';
+                }
+                return '⚠️ Add to Home Screen first';
+            }
+            return 'Not supported';
+        }
         return Notification.permission === 'granted' ? '✓ Enabled' : Notification.permission === 'denied' ? '✗ Denied' : 'Not requested';
     },
     
     getPushNotificationStatus() {
+        // Check iOS version for helpful messaging
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+            const match = navigator.userAgent.match(/OS (\d+)_/);
+            if (match) {
+                const iosVersion = parseInt(match[1]);
+                if (iosVersion < 16) {
+                    return '⚠️ Requires iOS 16.4+';
+                }
+            }
+            // Check if not in standalone mode
+            if (window.navigator.standalone !== true && !window.matchMedia('(display-mode: standalone)').matches) {
+                return '⚠️ Add to Home Screen';
+            }
+        }
+        
         if (window.FCMClient) {
             return window.FCMClient.getStatus();
         }
@@ -173,11 +198,15 @@ const SettingsScreen = {
         }
         
         try {
+            window.App.showToast('Setting up push notifications...', 'info');
+            
             // Initialize if not already
-            await window.FCMClient.init();
+            const initResult = await window.FCMClient.init();
+            console.log('FCM init result:', initResult);
             
             // Request permission and token
             const token = await window.FCMClient.requestPermissionAndToken();
+            console.log('FCM token result:', token ? 'obtained' : 'failed');
             
             if (token) {
                 window.App.showToast('Push notifications enabled!', 'success');
@@ -187,12 +216,19 @@ const SettingsScreen = {
                 const workdayEndTime = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.WORKDAY_END_TIME, '17:00');
                 await window.FCMClient.updateWorkdayEndTime(workdayEndTime);
             } else {
-                window.App.showToast('Could not enable push notifications', 'error');
-                if (statusEl) statusEl.textContent = '✗ Failed';
+                // Check if permission was granted but token failed
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                    window.App.showToast('Permission granted but token failed. iOS may not fully support FCM.', 'warning');
+                    if (statusEl) statusEl.textContent = '⚠️ Token failed';
+                } else {
+                    window.App.showToast('Could not enable push notifications', 'error');
+                    if (statusEl) statusEl.textContent = '✗ Failed';
+                }
             }
         } catch (error) {
             console.error('Error enabling push notifications:', error);
             window.App.showToast('Error: ' + error.message, 'error');
+            if (statusEl) statusEl.textContent = '✗ Error';
         }
     },
     

@@ -6,14 +6,43 @@ const FCMClient = {
     token: null,
     isSupported: false,
     
+    // Check if running as iOS PWA
+    isIOSPWA() {
+        return (window.navigator.standalone === true) || 
+               (window.matchMedia('(display-mode: standalone)').matches && /iPhone|iPad|iPod/.test(navigator.userAgent));
+    },
+    
+    // Check if notifications are available
+    checkNotificationSupport() {
+        // Check basic support
+        if (typeof Notification === 'undefined') {
+            console.warn('⚠️ Notification API not available');
+            return false;
+        }
+        
+        if (!('Notification' in window)) {
+            console.warn('⚠️ Notification not in window');
+            return false;
+        }
+        
+        return true;
+    },
+    
     // Initialize FCM
     async init() {
         console.log('🔔 Initializing FCM Client...');
+        console.log('🔔 iOS PWA mode:', this.isIOSPWA());
+        console.log('🔔 Notification in window:', 'Notification' in window);
+        console.log('🔔 typeof Notification:', typeof Notification);
         
-        // Check if FCM is supported
-        if (!('Notification' in window)) {
-            console.warn('⚠️ Notifications not supported');
-            return false;
+        // Check if notifications are supported
+        if (!this.checkNotificationSupport()) {
+            console.warn('⚠️ Notifications not supported on this device/browser');
+            // On iOS PWA, notifications might still work - continue anyway
+            if (!this.isIOSPWA()) {
+                return false;
+            }
+            console.log('🔔 iOS PWA detected - continuing despite notification check');
         }
         
         if (!('serviceWorker' in navigator)) {
@@ -22,7 +51,7 @@ const FCMClient = {
         }
         
         // Check if Firebase Messaging is available
-        if (!firebase.messaging) {
+        if (typeof firebase === 'undefined' || !firebase.messaging) {
             console.warn('⚠️ Firebase Messaging not loaded');
             return false;
         }
@@ -52,8 +81,27 @@ const FCMClient = {
         console.log('🔔 Requesting notification permission...');
         
         try {
+            // Make sure FCM is initialized
+            if (!this.messaging) {
+                console.log('🔔 FCM not initialized, initializing now...');
+                const initResult = await this.init();
+                console.log('🔔 Init result:', initResult);
+                if (!initResult && !this.isIOSPWA()) {
+                    throw new Error('FCM initialization failed');
+                }
+            }
+            
+            // Check current permission
+            console.log('🔔 Current permission:', typeof Notification !== 'undefined' ? Notification.permission : 'Notification undefined');
+            
             // Request permission
-            const permission = await Notification.requestPermission();
+            let permission;
+            if (typeof Notification !== 'undefined' && Notification.requestPermission) {
+                permission = await Notification.requestPermission();
+                console.log('🔔 Permission result:', permission);
+            } else {
+                throw new Error('Notification API not available');
+            }
             
             if (permission !== 'granted') {
                 console.warn('⚠️ Notification permission denied');
@@ -63,30 +111,49 @@ const FCMClient = {
             console.log('✓ Notification permission granted');
             
             // Get service worker registration
+            console.log('🔔 Getting service worker registration...');
             const swRegistration = await navigator.serviceWorker.ready;
+            console.log('✓ Service Worker ready:', swRegistration.scope);
+            
+            // Check VAPID key
+            const vapidKey = this.getVapidKey();
+            console.log('🔔 VAPID key present:', vapidKey ? 'Yes (' + vapidKey.substring(0, 20) + '...)' : 'NO - MISSING!');
+            
+            if (!vapidKey) {
+                throw new Error('VAPID key is missing');
+            }
             
             // Get FCM token
-            const token = await this.messaging.getToken({
-                vapidKey: this.getVapidKey(),
-                serviceWorkerRegistration: swRegistration
-            });
-            
-            if (token) {
-                console.log('✓ FCM Token obtained');
-                this.token = token;
+            console.log('🔔 Requesting FCM token...');
+            try {
+                const token = await this.messaging.getToken({
+                    vapidKey: vapidKey,
+                    serviceWorkerRegistration: swRegistration
+                });
                 
-                // Register token with backend
-                await this.registerTokenWithBackend(token);
-                
-                return token;
-            } else {
-                console.warn('⚠️ No FCM token available');
-                return null;
+                if (token) {
+                    console.log('✓ FCM Token obtained:', token.substring(0, 20) + '...');
+                    this.token = token;
+                    
+                    // Register token with backend
+                    await this.registerTokenWithBackend(token);
+                    
+                    return token;
+                } else {
+                    console.warn('⚠️ No FCM token returned (token is null/undefined)');
+                    return null;
+                }
+            } catch (tokenError) {
+                console.error('❌ Error getting FCM token:', tokenError);
+                console.error('❌ Token error name:', tokenError.name);
+                console.error('❌ Token error message:', tokenError.message);
+                console.error('❌ Token error stack:', tokenError.stack);
+                throw new Error('FCM token error: ' + tokenError.message);
             }
             
         } catch (error) {
             console.error('Error getting FCM token:', error);
-            return null;
+            throw error;
         }
     },
     
@@ -133,7 +200,7 @@ const FCMClient = {
         }
         
         // Also show browser notification (since we're in foreground, this is optional)
-        if (Notification.permission === 'granted') {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             const notif = new Notification(notification.title, {
                 body: notification.body,
                 icon: '/assets/icons/icon-192.png',
@@ -188,13 +255,14 @@ const FCMClient = {
     // Check if push notifications are enabled
     isEnabled() {
         return this.isSupported && 
-               Notification.permission === 'granted' && 
+               (typeof Notification !== 'undefined' && Notification.permission === 'granted') && 
                this.token !== null;
     },
     
     // Get current status for display
     getStatus() {
-        if (!this.isSupported) return 'Not supported';
+        if (!this.isSupported && !this.isIOSPWA()) return 'Not supported';
+        if (typeof Notification === 'undefined') return 'Not available';
         if (Notification.permission === 'denied') return '✗ Denied';
         if (Notification.permission === 'granted' && this.token) return '✓ Enabled (Push)';
         if (Notification.permission === 'granted') return '⚠️ Needs setup';
