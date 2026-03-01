@@ -1,7 +1,46 @@
-// Service Worker for SDAPWA v1.3.3
+// Service Worker for SDAPWA v1.3.3 (with FCM)
 // Provides offline support, asset caching, and background notifications
 
-const CACHE_NAME = 'sdapwa-v1.3.3';
+// Import Firebase Messaging service worker
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+
+// Firebase configuration (must match your app config)
+firebase.initializeApp({
+    apiKey: "AIzaSyDKmj5YhwFNK90dLq3Um-nMkqqU9Yu5R0E",
+    authDomain: "simplydonesync.firebaseapp.com",
+    projectId: "simplydonesync",
+    storageBucket: "simplydonesync.firebasestorage.app",
+    messagingSenderId: "389712724470",
+    appId: "1:389712724470:web:0a3f48dde195c1de29c7d7"
+});
+
+// Initialize Firebase Messaging
+const messaging = firebase.messaging();
+
+// Handle background messages (when app is closed or in background)
+messaging.onBackgroundMessage((payload) => {
+    console.log('[SW] Background message received:', payload);
+    
+    const { notification, data } = payload;
+    
+    const options = {
+        body: notification?.body || 'You have a task update',
+        icon: '/assets/icons/icon-192.png',
+        badge: '/assets/icons/icon-96.png',
+        vibrate: [200, 100, 200],
+        tag: data?.type || 'fcm-background',
+        requireInteraction: data?.type === 'task_start' || data?.type === 'bmde_warning',
+        data: data || {}
+    };
+    
+    return self.registration.showNotification(
+        notification?.title || 'SimplyDone',
+        options
+    );
+});
+
+const CACHE_NAME = 'sdapwa-v1.3.3-fcm';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
