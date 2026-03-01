@@ -30,36 +30,61 @@ const FCMClient = {
     
     // Initialize FCM
     async init() {
+        const showToast = (msg) => {
+            if (window.App && window.App.showToast) {
+                window.App.showToast(msg, 'info');
+            }
+        };
+        
         console.log('🔔 Initializing FCM Client...');
+        showToast('Init: Starting...');
+        
         console.log('🔔 iOS PWA mode:', this.isIOSPWA());
-        console.log('🔔 Notification in window:', 'Notification' in window);
-        console.log('🔔 typeof Notification:', typeof Notification);
+        showToast('Init: iOS PWA = ' + this.isIOSPWA());
         
         // Check if notifications are supported
+        showToast('Init: Checking notifications...');
         if (!this.checkNotificationSupport()) {
             console.warn('⚠️ Notifications not supported on this device/browser');
-            // On iOS PWA, notifications might still work - continue anyway
+            showToast('Init: Notifications not supported');
             if (!this.isIOSPWA()) {
                 return false;
             }
             console.log('🔔 iOS PWA detected - continuing despite notification check');
         }
         
+        showToast('Init: Checking SW...');
         if (!('serviceWorker' in navigator)) {
             console.warn('⚠️ Service Workers not supported');
+            showToast('Init: SW not supported');
             return false;
         }
+        showToast('Init: SW OK');
+        
+        // Check if Firebase is available
+        showToast('Init: Checking Firebase...');
+        if (typeof firebase === 'undefined') {
+            console.warn('⚠️ Firebase not loaded');
+            showToast('Init: Firebase undefined!');
+            return false;
+        }
+        showToast('Init: Firebase exists');
         
         // Check if Firebase Messaging is available
-        if (typeof firebase === 'undefined' || !firebase.messaging) {
+        showToast('Init: Checking messaging...');
+        if (!firebase.messaging) {
             console.warn('⚠️ Firebase Messaging not loaded');
+            showToast('Init: firebase.messaging missing!');
             return false;
         }
+        showToast('Init: Messaging exists');
         
         try {
             // Initialize Firebase Messaging
+            showToast('Init: Creating messaging...');
             this.messaging = firebase.messaging();
             this.isSupported = true;
+            showToast('Init: Messaging created');
             
             // Handle foreground messages
             this.messaging.onMessage((payload) => {
@@ -68,10 +93,12 @@ const FCMClient = {
             });
             
             console.log('✓ FCM Client initialized');
+            showToast('Init: SUCCESS');
             return true;
             
         } catch (error) {
             console.error('Error initializing FCM:', error);
+            showToast('Init ERROR: ' + error.message);
             return false;
         }
     },
