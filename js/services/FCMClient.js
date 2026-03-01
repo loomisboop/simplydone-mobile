@@ -80,79 +80,86 @@ const FCMClient = {
     async requestPermissionAndToken() {
         console.log('🔔 Requesting notification permission...');
         
+        const showToast = (msg) => {
+            if (window.App && window.App.showToast) {
+                window.App.showToast(msg, 'info');
+            }
+        };
+        
         try {
             // Make sure FCM is initialized
             if (!this.messaging) {
-                console.log('🔔 FCM not initialized, initializing now...');
+                showToast('4a: FCM not init, initializing...');
                 const initResult = await this.init();
-                console.log('🔔 Init result:', initResult);
+                showToast('4b: Init result = ' + initResult);
                 if (!initResult && !this.isIOSPWA()) {
                     throw new Error('FCM initialization failed');
                 }
             }
             
             // Check current permission
-            console.log('🔔 Current permission:', typeof Notification !== 'undefined' ? Notification.permission : 'Notification undefined');
+            showToast('4c: Checking permission...');
+            const currentPerm = typeof Notification !== 'undefined' ? Notification.permission : 'undefined';
+            showToast('4d: Current perm = ' + currentPerm);
             
             // Request permission
             let permission;
             if (typeof Notification !== 'undefined' && Notification.requestPermission) {
-                permission = await Notification.requestPermission();
-                console.log('🔔 Permission result:', permission);
+                if (currentPerm === 'granted') {
+                    permission = 'granted';
+                    showToast('4e: Already granted');
+                } else {
+                    showToast('4e: Requesting...');
+                    permission = await Notification.requestPermission();
+                    showToast('4f: Result = ' + permission);
+                }
             } else {
                 throw new Error('Notification API not available');
             }
             
             if (permission !== 'granted') {
-                console.warn('⚠️ Notification permission denied');
+                showToast('4g: Permission denied');
                 return null;
             }
             
-            console.log('✓ Notification permission granted');
-            
-            // Get service worker registration
-            console.log('🔔 Getting service worker registration...');
+            showToast('4h: Getting SW registration...');
             const swRegistration = await navigator.serviceWorker.ready;
-            console.log('✓ Service Worker ready:', swRegistration.scope);
+            showToast('4i: SW ready');
             
             // Check VAPID key
             const vapidKey = this.getVapidKey();
-            console.log('🔔 VAPID key present:', vapidKey ? 'Yes (' + vapidKey.substring(0, 20) + '...)' : 'NO - MISSING!');
+            showToast('4j: VAPID = ' + (vapidKey ? 'present' : 'MISSING'));
             
             if (!vapidKey) {
                 throw new Error('VAPID key is missing');
             }
             
             // Get FCM token
-            console.log('🔔 Requesting FCM token...');
+            showToast('4k: Getting FCM token...');
             try {
                 const token = await this.messaging.getToken({
                     vapidKey: vapidKey,
                     serviceWorkerRegistration: swRegistration
                 });
                 
+                showToast('4l: Token result = ' + (token ? 'got it' : 'null'));
+                
                 if (token) {
-                    console.log('✓ FCM Token obtained:', token.substring(0, 20) + '...');
                     this.token = token;
-                    
-                    // Register token with backend
+                    showToast('4m: Registering with backend...');
                     await this.registerTokenWithBackend(token);
-                    
+                    showToast('4n: Done!');
                     return token;
                 } else {
-                    console.warn('⚠️ No FCM token returned (token is null/undefined)');
                     return null;
                 }
             } catch (tokenError) {
-                console.error('❌ Error getting FCM token:', tokenError);
-                console.error('❌ Token error name:', tokenError.name);
-                console.error('❌ Token error message:', tokenError.message);
-                console.error('❌ Token error stack:', tokenError.stack);
+                showToast('4-ERR: ' + tokenError.message);
                 throw new Error('FCM token error: ' + tokenError.message);
             }
             
         } catch (error) {
-            console.error('Error getting FCM token:', error);
+            showToast('4-CATCH: ' + error.message);
             throw error;
         }
     },
