@@ -198,15 +198,17 @@ const SettingsScreen = {
         }
         
         try {
-            window.App.showToast('Setting up push notifications...', 'info');
+            window.App.showToast('Step 1: Starting setup...', 'info');
             
             // Initialize if not already
+            window.App.showToast('Step 2: Initializing FCM...', 'info');
             const initResult = await window.FCMClient.init();
-            console.log('FCM init result:', initResult);
+            window.App.showToast('Step 3: FCM init = ' + initResult, 'info');
             
             // Request permission and token
+            window.App.showToast('Step 4: Requesting permission...', 'info');
             const token = await window.FCMClient.requestPermissionAndToken();
-            console.log('FCM token result:', token ? 'obtained' : 'failed');
+            window.App.showToast('Step 5: Token = ' + (token ? 'obtained' : 'failed'), 'info');
             
             if (token) {
                 window.App.showToast('Push notifications enabled!', 'success');
