@@ -77,11 +77,19 @@ const SettingsScreen = {
                 <div class="settings-section">
                     <h3 class="settings-section-title">Notifications</h3>
                     <div class="settings-item">
-                        <div class="settings-item-label">Permission Status</div>
+                        <div class="settings-item-label">Local Notifications</div>
                         <div class="settings-item-value" id="notification-status">${this.getNotificationStatus()}</div>
                     </div>
-                    <button class="btn-secondary" id="request-notification-btn" style="width:100%;margin-top:8px;">Request Permission</button>
-                    <button class="btn-secondary" id="test-notification-btn" style="width:100%;margin-top:8px;">Test Notification</button>
+                    <div class="settings-item">
+                        <div class="settings-item-label">Push Notifications (Background)</div>
+                        <div class="settings-item-value" id="push-notification-status">${this.getPushNotificationStatus()}</div>
+                        <div class="settings-item-desc" style="font-size:12px;color:#757575;margin-top:4px;">
+                            Push notifications work even when the app is closed
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="enable-push-btn" style="width:100%;margin-top:12px;">Enable Push Notifications</button>
+                    <button class="btn-secondary" id="test-push-btn" style="width:100%;margin-top:8px;">Test Push Notification</button>
+                    <button class="btn-secondary" id="test-notification-btn" style="width:100%;margin-top:8px;">Test Local Notification</button>
                 </div>
                 
                 <div class="settings-section">
@@ -123,7 +131,8 @@ const SettingsScreen = {
         document.getElementById('save-device-name-btn')?.addEventListener('click', () => this.saveDeviceName());
         document.getElementById('save-workday-btn')?.addEventListener('click', () => this.saveWorkdayEndTime());
         document.getElementById('sync-now-btn')?.addEventListener('click', () => this.syncNow());
-        document.getElementById('request-notification-btn')?.addEventListener('click', () => this.requestNotificationPermission());
+        document.getElementById('enable-push-btn')?.addEventListener('click', () => this.enablePushNotifications());
+        document.getElementById('test-push-btn')?.addEventListener('click', () => this.testPushNotification());
         document.getElementById('test-notification-btn')?.addEventListener('click', () => this.testNotification());
         document.getElementById('request-location-btn')?.addEventListener('click', () => this.requestLocationPermission());
         document.getElementById('test-location-btn')?.addEventListener('click', () => this.testLocation());
@@ -146,6 +155,61 @@ const SettingsScreen = {
     getNotificationStatus() {
         if (!('Notification' in window)) return 'Not supported';
         return Notification.permission === 'granted' ? '✓ Enabled' : Notification.permission === 'denied' ? '✗ Denied' : 'Not requested';
+    },
+    
+    getPushNotificationStatus() {
+        if (window.FCMClient) {
+            return window.FCMClient.getStatus();
+        }
+        return 'Not initialized';
+    },
+    
+    async enablePushNotifications() {
+        const statusEl = document.getElementById('push-notification-status');
+        
+        if (!window.FCMClient) {
+            window.App.showToast('Push notifications not available', 'error');
+            return;
+        }
+        
+        try {
+            // Initialize if not already
+            await window.FCMClient.init();
+            
+            // Request permission and token
+            const token = await window.FCMClient.requestPermissionAndToken();
+            
+            if (token) {
+                window.App.showToast('Push notifications enabled!', 'success');
+                if (statusEl) statusEl.textContent = '✓ Enabled (Push)';
+                
+                // Also sync workday end time to server
+                const workdayEndTime = window.Storage.get(window.CONSTANTS.STORAGE_KEYS.WORKDAY_END_TIME, '17:00');
+                await window.FCMClient.updateWorkdayEndTime(workdayEndTime);
+            } else {
+                window.App.showToast('Could not enable push notifications', 'error');
+                if (statusEl) statusEl.textContent = '✗ Failed';
+            }
+        } catch (error) {
+            console.error('Error enabling push notifications:', error);
+            window.App.showToast('Error: ' + error.message, 'error');
+        }
+    },
+    
+    async testPushNotification() {
+        if (!window.FCMClient || !window.FCMClient.isEnabled()) {
+            window.App.showToast('Enable push notifications first', 'warning');
+            return;
+        }
+        
+        try {
+            window.App.showToast('Sending test push...', 'info');
+            await window.FCMClient.sendTestNotification();
+            window.App.showToast('Test push sent! Check your notifications.', 'success');
+        } catch (error) {
+            console.error('Error sending test push:', error);
+            window.App.showToast('Error: ' + error.message, 'error');
+        }
     },
     
     async checkLocationPermission() {
@@ -190,13 +254,25 @@ const SettingsScreen = {
         }
     },
     
-    saveWorkdayEndTime() {
+    async saveWorkdayEndTime() {
         const input = document.getElementById('workday-end-input');
         const time = input?.value;
         if (!time) { window.App.showToast('Please select a time', 'error'); return; }
         
         window.Storage.set(window.CONSTANTS.STORAGE_KEYS.WORKDAY_END_TIME, time);
-        window.App.showToast('Workday end time saved: ' + time, 'success');
+        
+        // Also sync to server for push notification scheduling
+        if (window.FCMClient && window.FCMClient.isEnabled()) {
+            try {
+                await window.FCMClient.updateWorkdayEndTime(time);
+                window.App.showToast('Workday end time saved: ' + time, 'success');
+            } catch (e) {
+                console.error('Error syncing workday time:', e);
+                window.App.showToast('Saved locally: ' + time, 'warning');
+            }
+        } else {
+            window.App.showToast('Workday end time saved: ' + time, 'success');
+        }
     },
     
     async syncNow() {

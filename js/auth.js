@@ -300,6 +300,20 @@ const Auth = {
                 console.log('✓ NotificationManager initialized');
             }
             
+            // Initialize FCM Client for push notifications
+            if (window.FCMClient) {
+                await window.FCMClient.init();
+                // Request permission and token (will prompt user)
+                const hasToken = window.Storage.get('fcm_token');
+                if (!hasToken) {
+                    // Don't auto-request on first sign-in, let Settings handle it
+                    console.log('ℹ️ FCM initialized, token not yet requested');
+                } else {
+                    // Refresh token if we had one before
+                    await window.FCMClient.requestPermissionAndToken();
+                }
+            }
+            
             // Initialize sync
             if (window.SyncManager && !window.syncManager) {
                 window.syncManager = new window.SyncManager(user.uid);

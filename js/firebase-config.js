@@ -1,4 +1,4 @@
-// SDAPWA v1.0.0 - Firebase Configuration
+// SDAPWA v1.3.3 - Firebase Configuration (with FCM)
 
 // Firebase configuration for project "simplydonesync"
 const firebaseConfig = {
@@ -10,6 +10,11 @@ const firebaseConfig = {
     appId: "1:389712724470:web:0a3f48dde195c1de29c7d7",
     measurementId: "G-ZCCCT2F8R8"
 };
+
+// VAPID Key for Web Push (generate this in Firebase Console)
+// Firebase Console > Project Settings > Cloud Messaging > Web Push certificates
+// Click "Generate Key Pair" and paste the public key here
+window.FIREBASE_VAPID_KEY = "BERhpF8zM_lpKe1E2YbkdsUZCVHY7xybafqFNzFggs_2vg1u985OjJ93PyKEmuXrLeAF9v7VI1DE5-jtiGeEo9E";
 
 // Initialize Firebase
 try {
@@ -24,6 +29,12 @@ try {
 // Initialize Firebase services
 window.auth = firebase.auth();
 window.db = firebase.firestore();
+
+// Initialize Firebase Functions (for Cloud Functions calls)
+if (firebase.functions) {
+    window.functions = firebase.functions();
+    console.log('✓ Firebase Functions initialized');
+}
 
 // Configure Firestore settings
 window.db.settings({
@@ -51,7 +62,4 @@ window.googleProvider = new firebase.auth.GoogleAuthProvider();
 // Export Firebase instances
 window.firebase = firebase;
 
-console.log('✓ Firebase config loaded');
-
-// Firebase configuration is now active and ready to use!
-// This connects to your existing "simplydonesync" Firebase project.
+console.log('✓ Firebase config loaded (with FCM support)');
